@@ -1,10 +1,18 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideRouter } from '@angular/router';
 import { App } from './app';
+import { routes } from './app.routes';
+import { authInterceptor } from './core/interceptors/auth.interceptor';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
+      providers: [
+        provideHttpClient(withInterceptors([authInterceptor])),
+        provideRouter(routes),
+      ],
     }).compileComponents();
   });
 
@@ -14,10 +22,10 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render title', () => {
+  it('should show TripWise brand', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, Frontend');
+    expect(compiled.querySelector('.brand')?.textContent).toContain('TripWise');
   });
 });

@@ -1,0 +1,14 @@
+/dist
+/node_modules
+/build
+logs
+*.log
+.env
+.env.*
+coverage
+.idea
+.vscode/*
+!.vscode/launch.json
+!.vscode/extensions.json
+.temp
+.tmp

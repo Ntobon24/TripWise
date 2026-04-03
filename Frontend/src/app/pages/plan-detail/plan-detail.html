@@ -1,0 +1,103 @@
+<div class="tw-container page">
+  @if (err() && !plan()) {
+    <p class="tw-error">{{ err() }}</p>
+    <a routerLink="/planes">← Volver</a>
+  } @else if (plan(); as p) {
+    <div class="head">
+      <a routerLink="/planes" class="back">← Mis planes</a>
+      <div class="head-row">
+        <h1 class="page-title">Editar plan</h1>
+        <button type="button" class="tw-btn tw-btn--ghost danger" (click)="remove()">Eliminar</button>
+      </div>
+    </div>
+
+    @if (err()) {
+      <p class="tw-error">{{ err() }}</p>
+    }
+    @if (ok()) {
+      <p class="tw-ok">{{ ok() }}</p>
+    }
+
+    <div class="layout">
+      <form class="tw-card" (submit)="$event.preventDefault()">
+        <h2 class="h2">Información general</h2>
+        <div class="tw-field">
+          <label>Título</label>
+          <input [(ngModel)]="title" name="title" />
+        </div>
+        <div class="grid">
+          <div class="tw-field">
+            <label>Presupuesto</label>
+            <input type="number" [(ngModel)]="budgetAmount" name="b" min="0.01" step="50" />
+          </div>
+          <div class="tw-field">
+            <label>Origen código</label>
+            <input [(ngModel)]="originCityCode" name="oc" />
+          </div>
+          <div class="tw-field">
+            <label>Origen ciudad</label>
+            <input [(ngModel)]="originCityName" name="on" />
+          </div>
+          <div class="tw-field">
+            <label>Destino código</label>
+            <input [(ngModel)]="destinationCityCode" name="dc" />
+          </div>
+          <div class="tw-field">
+            <label>Destino ciudad</label>
+            <input [(ngModel)]="destinationCityName" name="dn" />
+          </div>
+          <div class="tw-field">
+            <label>Ida</label>
+            <input [(ngModel)]="departureDate" name="dep" />
+          </div>
+          <div class="tw-field">
+            <label>Vuelta</label>
+            <input [(ngModel)]="returnDate" name="ret" />
+          </div>
+        </div>
+        <button type="button" class="tw-btn" [disabled]="busy()" (click)="saveChanges()">
+          {{ busy() ? 'Guardando…' : 'Guardar cambios' }}
+        </button>
+      </form>
+
+      <section class="tw-card rec">
+        <h2 class="h2">Recomendaciones guardadas</h2>
+        @if (recPayload(); as rec) {
+          @if (rec.meta.note) {
+            <p class="tw-muted small">{{ rec.meta.note }}</p>
+          }
+          <h3>Vuelos</h3>
+          <div class="flight-list">
+            @for (f of rec.flights; track f.id) {
+              <div class="flight-row" [class.in]="f.withinBudget">
+                <span class="tw-price">{{ f.totalPrice | number : '1.0-0' }} {{ f.currency }}</span>
+                <span class="detail">{{ f.summary }}</span>
+                @if (f.departureAt) {
+                  <span class="tw-muted tiny">{{ f.departureAt | date : 'short' }}</span>
+                }
+              </div>
+            } @empty {
+              <p class="tw-muted">Sin vuelos en el último cálculo.</p>
+            }
+          </div>
+          <h3>Actividades</h3>
+          <ul class="acts">
+            @for (a of rec.activities; track a.id) {
+              <li>
+                {{ a.name }}
+                @if (a.priceAmount != null) {
+                  — {{ a.priceAmount | number : '1.0-0' }} {{ a.priceCurrency }}
+                }
+              </li>
+            } @empty {
+              <li class="tw-muted">Ninguna actividad indexada.</li>
+            }
+          </ul>
+        } @else {
+          <p class="tw-muted">Datos en formato anterior o vacío. Detalle técnico:</p>
+          <pre class="raw">{{ p.recommendations | json }}</pre>
+        }
+      </section>
+    </div>
+  }
+</div>

@@ -1,0 +1,178 @@
+.page {
+  padding-bottom: 2rem;
+}
+
+.status-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 1.5rem;
+}
+
+.small-hint {
+  font-size: 0.8rem;
+}
+
+.block {
+  margin-bottom: 2.5rem;
+}
+
+.block h2 {
+  font-size: 1.35rem;
+  margin: 0 0 0.5rem;
+}
+
+.block h3 {
+  font-size: 1.1rem;
+  margin: 1.5rem 0 0.65rem;
+}
+
+.search-bar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.search-bar input {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--tw-radius-sm);
+  border: 1px solid var(--tw-border);
+  background: var(--tw-bg);
+  color: var(--tw-text);
+}
+
+.hint-text {
+  font-size: 0.85rem;
+  margin: 0 0 1rem;
+}
+
+.dest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.dest-card h3 {
+  margin: 0.35rem 0;
+  font-size: 1.05rem;
+  font-family: var(--tw-font);
+  font-weight: 600;
+}
+
+.dest-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.iata {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--tw-accent);
+}
+
+.small {
+  font-size: 0.85rem;
+  margin: 0.25rem 0 0;
+}
+
+.dest-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.linkish {
+  background: none;
+  border: none;
+  color: var(--tw-accent);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0;
+  font-family: inherit;
+}
+
+.linkish:hover {
+  text-decoration: underline;
+}
+
+.rec-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem 1rem;
+  margin: 1rem 0;
+}
+
+.note {
+  margin: 1rem 0;
+}
+
+.rec-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 1rem 0;
+  font-weight: 600;
+}
+
+.flight-grid,
+.act-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.85rem;
+}
+
+.flight-card.on-budget {
+  border-color: rgba(74, 222, 128, 0.4);
+  background: rgba(74, 222, 128, 0.05);
+}
+
+.flight-price {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.35rem;
+}
+
+.route {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.act-card h4 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-family: var(--tw-font);
+}
+
+.price-line {
+  margin: 0.5rem 0 0;
+  font-weight: 600;
+  color: var(--tw-accent);
+}
+
+.cta-banner {
+  text-align: center;
+  padding: 2rem 1.5rem;
+}
+
+.cta-banner.slim {
+  padding: 1rem;
+}
+
+.cta-banner h2 {
+  margin: 0 0 0.5rem;
+}
+
+.cta-banner-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}

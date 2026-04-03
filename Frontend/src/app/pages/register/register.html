@@ -1,0 +1,39 @@
+<div class="auth-wrap">
+  <div class="tw-card auth-card">
+    <h1>Crea tu cuenta</h1>
+    <p class="tw-muted">Nombre, correo y contraseña segura (mín. 8 caracteres, letra y número).</p>
+
+    @if (err()) {
+      <p class="tw-error">{{ err() }}</p>
+    }
+    @if (ok()) {
+      <p class="tw-ok">¡Listo! Te llevamos al inicio de sesión…</p>
+    }
+
+    <form (ngSubmit)="submit()">
+      <div class="tw-field">
+        <label>Nombre</label>
+        <input [(ngModel)]="name" name="name" required minlength="2" />
+      </div>
+      <div class="tw-field">
+        <label>Correo</label>
+        <input [(ngModel)]="email" name="email" type="email" required autocomplete="email" />
+      </div>
+      <div class="tw-field">
+        <label>Contraseña</label>
+        <input
+          [(ngModel)]="password"
+          name="password"
+          type="password"
+          required
+          minlength="8"
+          autocomplete="new-password"
+        />
+      </div>
+      <button type="submit" class="tw-btn wide" [disabled]="busy()">
+        {{ busy() ? 'Creando…' : 'Crear cuenta' }}
+      </button>
+    </form>
+    <p class="foot-link tw-muted">¿Ya tienes cuenta? <a routerLink="/entrar">Entrar</a></p>
+  </div>
+</div>

@@ -1,0 +1,110 @@
+.page {
+  padding-bottom: 2rem;
+}
+
+.back {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.head-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.danger {
+  color: var(--tw-danger);
+  border-color: rgba(248, 113, 113, 0.5);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 880px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.h2 {
+  font-size: 1.1rem;
+  margin: 0 0 1rem;
+  font-family: var(--tw-font);
+  font-weight: 600;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.flight-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.flight-row {
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--tw-radius-sm);
+  background: var(--tw-bg);
+  border: 1px solid var(--tw-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.flight-row.in {
+  border-color: rgba(74, 222, 128, 0.45);
+}
+
+.detail {
+  font-size: 0.88rem;
+}
+
+.tiny {
+  font-size: 0.78rem;
+}
+
+.small {
+  font-size: 0.88rem;
+}
+
+.acts {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.9rem;
+  color: var(--tw-muted);
+}
+
+.acts li {
+  margin-bottom: 0.35rem;
+}
+
+.raw {
+  font-size: 0.72rem;
+  max-height: 240px;
+  overflow: auto;
+  background: var(--tw-bg);
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--tw-border);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.rec h3 {
+  font-size: 0.95rem;
+  margin: 1rem 0 0.5rem;
+  font-family: var(--tw-font);
+}

@@ -1,0 +1,184 @@
+<div class="tw-container page">
+  <h1 class="page-title">Descubre destinos</h1>
+  <p class="page-sub tw-muted">
+    Busca ciudades (GeoDB), vuelos con precios (FlightAPI) y puntos de interés (OpenTripMap) según las claves del
+    servidor.
+  </p>
+
+  @if (status(); as st) {
+    <div class="status-row">
+      @if (st.flightApi.configured) {
+        <div class="tw-alert tw-alert--info">
+          <strong>FlightAPI</strong> — vuelos con precios activos.
+        </div>
+      } @else {
+        <div class="tw-alert tw-alert--warning">
+          <strong>Sin FlightAPI</strong> — {{ st.flightApi.hint }}
+        </div>
+      }
+      @if (!st.geodb.configured) {
+        <div class="tw-muted small-hint">GeoDB — {{ st.geodb.hint }}</div>
+      }
+      @if (!st.openTripMap.configured) {
+        <div class="tw-muted small-hint">OpenTripMap — {{ st.openTripMap.hint }}</div>
+      }
+    </div>
+  }
+
+  @if (err()) {
+    <p class="tw-error">{{ err() }}</p>
+  }
+
+  <section class="block">
+    <h2>Buscar ciudad</h2>
+    <div class="search-bar">
+      <input [(ngModel)]="searchQ" (keyup.enter)="runDestinationSearch()" placeholder="Ej. Barcelona, Tokio…" />
+      <button type="button" class="tw-btn" [disabled]="loadingDest()" (click)="runDestinationSearch()">
+        {{ loadingDest() ? 'Buscando…' : 'Buscar' }}
+      </button>
+    </div>
+    @if (destMeta(); as dm) {
+      <p class="tw-muted hint-text">{{ dm.hint }}</p>
+    }
+    <div class="dest-grid">
+      @for (c of destinations(); track c.name + (c.code ?? '') + c.source) {
+        <article class="tw-card dest-card">
+          <div class="dest-top">
+            <span class="tw-badge">GeoDB</span>
+            @if (c.code) {
+              <span class="iata">{{ c.code }}</span>
+            }
+          </div>
+          <h3>{{ c.name }}</h3>
+          @if (c.subtitle) {
+            <p class="tw-muted small">{{ c.subtitle }}</p>
+          }
+          <div class="dest-actions">
+            <button type="button" class="linkish" (click)="pickCity(c, 'origin')">Como origen</button>
+            <button type="button" class="linkish" (click)="pickCity(c, 'dest')">Como destino</button>
+          </div>
+        </article>
+      } @empty {
+        @if (!loadingDest()) {
+          <p class="tw-muted">Sin resultados. Prueba otra búsqueda o configura GEODB_RAPIDAPI_KEY en el servidor.</p>
+        }
+      }
+    </div>
+  </section>
+
+  <section class="block rec-block">
+    <h2>Recomendaciones por presupuesto</h2>
+    <p class="tw-muted">
+      Presupuesto aproximado y códigos de <strong>2 a 8 letras</strong> (p. ej. MX, MEX, BOG, MAD). Algunos códigos de
+      país de dos letras se traducen al aeropuerto principal para la búsqueda de vuelos.
+    </p>
+    <div class="rec-form">
+      <div class="tw-field">
+        <label>Presupuesto (USD)</label>
+        <input type="number" [(ngModel)]="budget" min="100" step="50" />
+      </div>
+      <div class="tw-field">
+        <label>Origen (2–8 letras)</label>
+        <input [(ngModel)]="originCode" maxlength="8" />
+      </div>
+      <div class="tw-field">
+        <label>Destino (2–8 letras)</label>
+        <input [(ngModel)]="destCode" maxlength="8" />
+      </div>
+      <div class="tw-field">
+        <label>Nombre origen (opcional)</label>
+        <input [(ngModel)]="originName" />
+      </div>
+      <div class="tw-field">
+        <label>Nombre destino (opcional)</label>
+        <input [(ngModel)]="destName" />
+      </div>
+      <div class="tw-field">
+        <label>Fecha ida (opc.)</label>
+        <input [(ngModel)]="departureDate" placeholder="YYYY-MM-DD" />
+      </div>
+    </div>
+    <button type="button" class="tw-btn" [disabled]="loadingRec()" (click)="runRecommendations()">
+      {{ loadingRec() ? 'Calculando…' : 'Ver recomendaciones' }}
+    </button>
+
+    @if (rec(); as r) {
+      @if (r.meta.note) {
+        <p class="tw-alert tw-alert--info note">{{ r.meta.note }}</p>
+      }
+      @if (r.meta.message) {
+        <p class="tw-alert tw-alert--warning note">{{ r.meta.message }}</p>
+      }
+
+      <div class="rec-summary">
+        <span
+          >{{ r.origin.name ?? r.origin.code }} → {{ r.destination.name ?? r.destination.code }}</span
+        >
+        <span class="tw-muted">Salida sugerida {{ r.departureDate }}</span>
+      </div>
+
+      <h3>Vuelos</h3>
+      <div class="flight-grid">
+        @for (f of r.flights; track f.id) {
+          <article class="tw-card flight-card" [class.on-budget]="f.withinBudget">
+            <div class="flight-price">
+              <span class="tw-price">{{ f.totalPrice | number : '1.0-0' }} {{ f.currency }}</span>
+              @if (f.withinBudget) {
+                <span class="tw-badge tw-badge--ok">Dentro del presupuesto</span>
+              } @else {
+                <span class="tw-badge tw-badge--warn">Por encima</span>
+              }
+            </div>
+            <p class="route">{{ f.summary }}</p>
+            @if (f.departureAt) {
+              <p class="tw-muted small">Sale: {{ f.departureAt | date : 'medium' }}</p>
+            }
+          </article>
+        } @empty {
+          <p class="tw-muted">No hay vuelos en esta consulta. Revisa fechas y códigos de origen/destino (FlightAPI).</p>
+        }
+      </div>
+
+      <h3>Actividades / experiencias</h3>
+      <div class="act-grid">
+        @for (a of r.activities; track a.id) {
+          <article class="tw-card act-card">
+            <h4>{{ a.name ?? 'Punto de interés' }}</h4>
+            @if (a.shortDescription) {
+              <p class="tw-muted small">{{ a.shortDescription }}</p>
+            }
+            @if (a.priceAmount != null) {
+              <p class="price-line">
+                Desde {{ a.priceAmount | number : '1.0-0' }}
+                {{ a.priceCurrency ?? '' }}
+                @if (a.withinBudget === true) {
+                  <span class="tw-badge tw-badge--ok">Encaja</span>
+                }
+              </p>
+            }
+          </article>
+        } @empty {
+          <p class="tw-muted">Sin lugares en esta zona (OpenTripMap) o sin coordenadas del destino (GeoDB).</p>
+        }
+      </div>
+    }
+  </section>
+
+  @if (!auth.isLoggedIn()) {
+    <section class="cta-banner tw-card">
+      <h2>¿Listo para guardar tu plan?</h2>
+      <p class="tw-muted">Crea una cuenta o entra para guardar rutas y presupuesto en TripWise.</p>
+      <div class="cta-banner-actions">
+        <a routerLink="/registro" class="tw-btn">Registrarme</a>
+        <a routerLink="/entrar" class="tw-btn tw-btn--ghost">Ya tengo cuenta</a>
+      </div>
+    </section>
+  } @else {
+    <section class="cta-banner tw-card slim">
+      <p>
+        Sesión iniciada —
+        <a routerLink="/planes/nuevo">Crear un plan de viaje</a>
+      </p>
+    </section>
+  }
+</div>

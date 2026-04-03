@@ -1,0 +1,31 @@
+<div class="auth-wrap">
+  <div class="tw-card auth-card">
+    <h1>Bienvenido de nuevo</h1>
+    <p class="tw-muted">Entra con el correo y la contraseña de tu cuenta TripWise.</p>
+
+    @if (err()) {
+      <p class="tw-error">{{ err() }}</p>
+    }
+
+    <form (ngSubmit)="submit()">
+      <div class="tw-field">
+        <label>Correo electrónico</label>
+        <input [(ngModel)]="email" name="email" type="email" required autocomplete="username" />
+      </div>
+      <div class="tw-field">
+        <label>Contraseña</label>
+        <input
+          [(ngModel)]="password"
+          name="password"
+          type="password"
+          required
+          autocomplete="current-password"
+        />
+      </div>
+      <button type="submit" class="tw-btn wide" [disabled]="busy()">
+        {{ busy() ? 'Entrando…' : 'Entrar' }}
+      </button>
+    </form>
+    <p class="foot-link tw-muted">¿No tienes cuenta? <a routerLink="/registro">Regístrate</a></p>
+  </div>
+</div>

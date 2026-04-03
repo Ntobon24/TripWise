@@ -1,0 +1,28 @@
+.auth-wrap {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-card h1 {
+  margin: 0 0 0.35rem;
+  font-size: 1.65rem;
+}
+
+.wide {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.foot-link {
+  margin: 1.25rem 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+}

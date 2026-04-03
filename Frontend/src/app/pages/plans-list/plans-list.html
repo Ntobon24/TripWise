@@ -1,0 +1,50 @@
+<div class="tw-container page">
+  <div class="top-row">
+    <div>
+      <h1 class="page-title">Mis planes</h1>
+      <p class="page-sub tw-muted">
+        Cada plan guarda presupuesto, ruta y recomendaciones. Actualiza cuando cambien tus ciudades o tu margen.
+      </p>
+    </div>
+    <a routerLink="/planes/nuevo" class="tw-btn">+ Nuevo plan</a>
+  </div>
+
+  @if (loading()) {
+    <p class="tw-muted">Cargando tus planes…</p>
+  }
+  @if (err()) {
+    <p class="tw-error">{{ err() }}</p>
+  }
+
+  @if (!loading() && !plans().length && emptyMessage()) {
+    <div class="tw-card empty-state">
+      <h2>Todavía no hay planes</h2>
+      <p class="tw-muted">{{ emptyMessage() }}</p>
+      <a routerLink="/planes/nuevo" class="tw-btn">Crear mi primer plan</a>
+    </div>
+  }
+
+  @if (plans().length) {
+    <div class="plan-grid">
+      @for (p of plans(); track p.id) {
+        <a [routerLink]="['/planes', p.id]" class="tw-card plan-card">
+          <div class="plan-top">
+            <h2>{{ p.title }}</h2>
+            <span class="tw-badge">{{ p.currency }}</span>
+          </div>
+          <p class="budget">{{ p.budgetAmount | number : '1.0-0' }} {{ p.currency }}</p>
+          <p class="tw-muted route">
+            {{ p.originCityCode || '?' }} → {{ p.destinationCityCode || '?' }}
+          </p>
+          @if (p.originCityName || p.destinationCityName) {
+            <p class="names tw-muted">
+              {{ p.originCityName }} @if (p.destinationCityName) {
+                <span> · {{ p.destinationCityName }}</span>
+              }
+            </p>
+          }
+        </a>
+      }
+    </div>
+  }
+</div>
