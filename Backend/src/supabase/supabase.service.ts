@@ -2,10 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-/**
- * Cliente Supabase para operaciones server-side (Realtime puede suscribirse desde el frontend con la anon key).
- * Usa la service role JWT del panel de Supabase (Settings → API) o la clave compatible que provea tu proyecto.
- */
+
 @Injectable()
 export class SupabaseService {
   private readonly logger = new Logger(SupabaseService.name);

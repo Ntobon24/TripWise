@@ -1,10 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-/**
- * Códigos ISO 3166-1 alpha-2 usados como “ciudad” → aeropuerto principal para la ruta (IATA 3 letras).
- * Si no hay entrada, se envía el código tal cual (2 letras) a la API.
- */
+
 const ISO2_TO_MAIN_AIRPORT_IATA: Record<string, string> = {
   MX: 'MEX',
   ES: 'MAD',
@@ -124,9 +121,7 @@ export class FlightApiService {
     }
   }
 
-  /**
-   * Normaliza a segmento de URL: 3 letras IATA si es posible; códigos ISO2 p. ej. MX → MEX.
-   */
+ 
   private toPathAirportCode(raw: string): string | null {
     const c = raw.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 8);
     if (c.length < 2) {

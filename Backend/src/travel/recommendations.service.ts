@@ -26,7 +26,7 @@ function defaultDepartureDate(): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Código de origen/destino: letras A–Z, entre 2 y 8 caracteres (p. ej. MX, MEX, BOG). */
+
 function normalizeLocationCode(code: string): string {
   return code.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 8);
 }

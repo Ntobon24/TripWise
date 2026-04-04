@@ -1,10 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-/**
- * OpenTripMap — puntos de interés cerca de coordenadas (gratis con registro).
- * https://opentripmap.io/docs
- */
+
 @Injectable()
 export class OpenTripMapService {
   private readonly logger = new Logger(OpenTripMapService.name);
@@ -15,9 +12,7 @@ export class OpenTripMapService {
     return Boolean(this.config.get<string>('OPENTRIPMAP_API_KEY')?.trim());
   }
 
-  /**
-   * Lugares turísticos en un radio (metros).
-   */
+  
   async searchPlacesAroundRadius(params: {
     lat: number;
     lng: number;

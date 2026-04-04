@@ -1,4 +1,3 @@
-/** Formato unificado para listados de ciudades (GeoDB). */
 
 export type UnifiedCity = {
   source: 'geodb';

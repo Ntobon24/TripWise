@@ -1,9 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-/**
- * GeoDB Cities (RapidAPI). Búsqueda de ciudades y coordenadas para OpenTripMap.
- */
+
 @Injectable()
 export class GeoDbService {
   private readonly logger = new Logger(GeoDbService.name);
@@ -45,7 +43,6 @@ export class GeoDbService {
     return json.data ?? [];
   }
 
-  /** Primera ciudad con coordenadas (p. ej. para OpenTripMap). */
   async getFirstCityCoords(
     namePrefix: string,
   ): Promise<{ latitude: number; longitude: number } | null> {

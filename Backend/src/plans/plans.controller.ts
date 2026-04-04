@@ -14,10 +14,6 @@ import { PlansService } from './plans.service';
 import { CreateTravelPlanDto } from './dto/create-plan.dto';
 import { UpdateTravelPlanDto } from './dto/update-plan.dto';
 
-/**
- * HU-2, HU-6, HU-4 (persistido): planes asociados al viajero.
- * HU-19: guardar plan requiere sesión (401 sin token).
- */
 @Controller('plans')
 @UseGuards(JwtAuthGuard)
 export class PlansController {

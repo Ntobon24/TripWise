@@ -2,9 +2,7 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { GeoDbService } from '../travel/geodb.service';
 import { mapGeodbCity, type UnifiedCity } from '../travel/mappers/city-result.mapper';
 
-/**
- * HU-19: exploración ligera de destinos sin autenticación.
- */
+
 @Controller('explore')
 export class ExploreController {
   constructor(private readonly geodb: GeoDbService) {}

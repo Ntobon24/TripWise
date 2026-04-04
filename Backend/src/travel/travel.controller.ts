@@ -9,9 +9,7 @@ import { RecommendationsQueryDto } from './dto/recommendations-query.dto';
 import { CitiesSearchQueryDto } from './dto/cities-search-query.dto';
 import { mapGeodbCity, type UnifiedCity } from './mappers/city-result.mapper';
 
-/**
- * Rutas públicas (HU-4, HU-19): explorar ciudades y ver recomendaciones sin guardar planes.
- */
+
 @Controller('travel')
 export class TravelController {
   constructor(

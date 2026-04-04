@@ -29,11 +29,6 @@ export function buildTypeOrmOptions(config: ConfigService): DataSourceOptions {
     );
   }
 
-  /**
-   * Session pooler (Supavisor): IPv4 + cola de conexiones. Útil si `db.*.supabase.co` da ENOTFOUND
-   * en redes solo IPv4 / sin IPv6 operativo.
-   * Dashboard → Connect → Session pooler (host tipo aws-0-REGION.pooler.supabase.com, usuario postgres.REF).
-   */
   const usePooler = config.get<string>('SUPABASE_USE_POOLER') === 'true';
   const poolerRegion = config.get<string>('SUPABASE_POOLER_REGION')?.trim();
   const projectRef =

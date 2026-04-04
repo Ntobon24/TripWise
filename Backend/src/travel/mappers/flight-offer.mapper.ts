@@ -1,4 +1,3 @@
-/** Resumen unificado de oferta de vuelo (p. ej. FlightAPI). */
 
 export type FlightOfferSummary = {
   id: string;
