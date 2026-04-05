@@ -1,0 +1,54 @@
+<div class="tw-field tw-field--typeahead">
+  @if (label) {
+    <label [attr.for]="fieldId">{{ label }}</label>
+  }
+  <div class="typeahead-shell">
+    <input
+      [id]="fieldId"
+      type="text"
+      class="typeahead-input"
+      [attr.aria-expanded]="open"
+      [attr.aria-controls]="listboxId"
+      aria-autocomplete="list"
+      autocomplete="off"
+      spellcheck="false"
+      [(ngModel)]="displayValue"
+      (ngModelChange)="onSearch($event)"
+      (focus)="onFocus()"
+      (blur)="onBlur()"
+      [placeholder]="placeholder"
+    />
+    @if (loading) {
+      <span class="typeahead-spinner" aria-hidden="true"></span>
+    }
+    @if (open && (results.length || fieldError)) {
+      <ul [id]="listboxId" class="typeahead-panel" role="listbox">
+        @if (fieldError) {
+          <li class="typeahead-msg typeahead-msg--err" role="option">{{ fieldError }}</li>
+        }
+        @for (c of results; track c.name + (c.code ?? '')) {
+          <li role="option">
+            <button
+              type="button"
+              class="typeahead-option"
+              (mousedown)="$event.preventDefault()"
+              (click)="pick(c)"
+            >
+              <span class="opt-title">{{ c.name }}</span>
+              @if (subtitle(c)) {
+                <span class="opt-sub">{{ subtitle(c) }}</span>
+              }
+            </button>
+          </li>
+        } @empty {
+          @if (!fieldError && !loading) {
+            <li class="typeahead-msg" role="option">Sin coincidencias. Prueba otro término.</li>
+          }
+        }
+      </ul>
+    }
+  </div>
+  @if (hint) {
+    <p class="tw-field-hint">{{ hint }}</p>
+  }
+</div>

@@ -1,58 +1,90 @@
 <div class="tw-container page">
   @if (err() && !plan()) {
-    <p class="tw-error">{{ err() }}</p>
-    <a routerLink="/planes">← Volver</a>
+    <p class="tw-error" role="alert">{{ err() }}</p>
+    <a routerLink="/planes">← Volver a mis planes</a>
   } @else if (plan(); as p) {
     <div class="head">
       <a routerLink="/planes" class="back">← Mis planes</a>
       <div class="head-row">
-        <h1 class="page-title">Editar plan</h1>
+        <h1 class="page-title">{{ p.title }}</h1>
         <button type="button" class="tw-btn tw-btn--ghost danger" (click)="remove()">Eliminar</button>
       </div>
     </div>
 
     @if (err()) {
-      <p class="tw-error">{{ err() }}</p>
+      <p class="tw-error" role="alert">{{ err() }}</p>
     }
     @if (ok()) {
-      <p class="tw-ok">{{ ok() }}</p>
+      <p class="tw-ok" role="status">{{ ok() }}</p>
+    }
+    @if (formErr()) {
+      <p class="tw-field-error" role="alert">{{ formErr() }}</p>
     }
 
     <div class="layout">
-      <form class="tw-card" (submit)="$event.preventDefault()">
-        <h2 class="h2">Información general</h2>
+      <form class="tw-card edit-form" (submit)="$event.preventDefault()">
+        <h2 class="h2">Editar viaje</h2>
         <div class="tw-field">
-          <label>Título</label>
-          <input [(ngModel)]="title" name="title" />
+          <label for="edit-title">Título</label>
+          <input id="edit-title" [(ngModel)]="title" name="title" maxlength="200" />
         </div>
-        <div class="grid">
+        <div class="tw-field">
+          <label for="edit-budget">Presupuesto</label>
+          <input id="edit-budget" type="number" [(ngModel)]="budgetAmount" name="b" min="0.01" step="50" required />
+        </div>
+
+        <div class="city-group">
+          <p class="city-label">Origen</p>
+          <app-city-typeahead
+            label="Ciudad"
+            placeholder="Busca la ciudad de origen…"
+            [(cityName)]="originCityName"
+            [(cityCode)]="originCityCode"
+          />
           <div class="tw-field">
-            <label>Presupuesto</label>
-            <input type="number" [(ngModel)]="budgetAmount" name="b" min="0.01" step="50" />
+            <label for="edit-oc">Código IATA / país</label>
+            <input
+              id="edit-oc"
+              type="text"
+              class="code-input"
+              [(ngModel)]="originCityCode"
+              name="oc"
+              maxlength="8"
+              placeholder="BOG"
+            />
+          </div>
+        </div>
+
+        <div class="city-group">
+          <p class="city-label">Destino</p>
+          <app-city-typeahead
+            label="Ciudad"
+            placeholder="Busca la ciudad de destino…"
+            [(cityName)]="destinationCityName"
+            [(cityCode)]="destinationCityCode"
+          />
+          <div class="tw-field">
+            <label for="edit-dc">Código IATA / país</label>
+            <input
+              id="edit-dc"
+              type="text"
+              class="code-input"
+              [(ngModel)]="destinationCityCode"
+              name="dc"
+              maxlength="8"
+              placeholder="MAD"
+            />
+          </div>
+        </div>
+
+        <div class="dates-grid">
+          <div class="tw-field">
+            <label for="edit-dep">Ida</label>
+            <input id="edit-dep" type="date" [(ngModel)]="departureDate" name="dep" [min]="minDate" />
           </div>
           <div class="tw-field">
-            <label>Origen código</label>
-            <input [(ngModel)]="originCityCode" name="oc" />
-          </div>
-          <div class="tw-field">
-            <label>Origen ciudad</label>
-            <input [(ngModel)]="originCityName" name="on" />
-          </div>
-          <div class="tw-field">
-            <label>Destino código</label>
-            <input [(ngModel)]="destinationCityCode" name="dc" />
-          </div>
-          <div class="tw-field">
-            <label>Destino ciudad</label>
-            <input [(ngModel)]="destinationCityName" name="dn" />
-          </div>
-          <div class="tw-field">
-            <label>Ida</label>
-            <input [(ngModel)]="departureDate" name="dep" />
-          </div>
-          <div class="tw-field">
-            <label>Vuelta</label>
-            <input [(ngModel)]="returnDate" name="ret" />
+            <label for="edit-ret">Vuelta</label>
+            <input id="edit-ret" type="date" [(ngModel)]="returnDate" name="ret" [min]="departureDate || minDate" />
           </div>
         </div>
         <button type="button" class="tw-btn" [disabled]="busy()" (click)="saveChanges()">
@@ -60,42 +92,55 @@
         </button>
       </form>
 
-      <section class="tw-card rec">
-        <h2 class="h2">Recomendaciones guardadas</h2>
+      <section class="tw-card rec-panel">
+        <h2 class="h2">Recomendaciones</h2>
         @if (recPayload(); as rec) {
           @if (rec.meta.note) {
-            <p class="tw-muted small">{{ rec.meta.note }}</p>
+            <p class="tw-muted note-text">{{ rec.meta.note }}</p>
           }
           <h3>Vuelos</h3>
           <div class="flight-list">
-            @for (f of rec.flights; track f.id) {
+            @for (f of pagedFlights; track f.id) {
               <div class="flight-row" [class.in]="f.withinBudget">
-                <span class="tw-price">{{ f.totalPrice | number : '1.0-0' }} {{ f.currency }}</span>
-                <span class="detail">{{ f.summary }}</span>
+                <div class="flight-row-top">
+                  <span class="flight-row-price">{{ f.totalPrice | number : '1.0-0' }} {{ f.currency }}</span>
+                  @if (f.withinBudget) {
+                    <span class="tw-badge tw-badge--ok">Dentro</span>
+                  }
+                </div>
+                <span class="flight-row-detail">{{ f.summary }}</span>
                 @if (f.departureAt) {
-                  <span class="tw-muted tiny">{{ f.departureAt | date : 'short' }}</span>
+                  <span class="tw-muted flight-row-date">{{ f.departureAt | date : 'dd MMM yyyy, HH:mm' }}</span>
                 }
               </div>
             } @empty {
               <p class="tw-muted">Sin vuelos en el último cálculo.</p>
             }
           </div>
+          @if (totalFlightPages > 1) {
+            <div class="flight-pagination">
+              <button type="button" class="pag-btn" [disabled]="flightPage === 0" (click)="prevFlightPage()">← Anterior</button>
+              <span class="pag-info">{{ flightPage + 1 }} / {{ totalFlightPages }}</span>
+              <button type="button" class="pag-btn" [disabled]="flightPage === totalFlightPages - 1" (click)="nextFlightPage()">Siguiente →</button>
+            </div>
+          }
           <h3>Actividades</h3>
           <ul class="acts">
             @for (a of rec.activities; track a.id) {
               <li>
-                {{ a.name }}
+                <span>{{ a.name }}</span>
                 @if (a.priceAmount != null) {
-                  — {{ a.priceAmount | number : '1.0-0' }} {{ a.priceCurrency }}
+                  <span class="act-price-inline">{{ a.priceAmount | number : '1.0-0' }} {{ a.priceCurrency }}</span>
                 }
               </li>
             } @empty {
-              <li class="tw-muted">Ninguna actividad indexada.</li>
+              <li class="tw-muted">No hay actividades en esta lista.</li>
             }
           </ul>
         } @else {
-          <p class="tw-muted">Datos en formato anterior o vacío. Detalle técnico:</p>
-          <pre class="raw">{{ p.recommendations | json }}</pre>
+          <p class="tw-muted">
+            Guarda el plan con origen, destino y presupuesto para generar recomendaciones de vuelos y actividades.
+          </p>
         }
       </section>
     </div>

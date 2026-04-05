@@ -1,11 +1,12 @@
 .page {
-  padding-bottom: 2rem;
+  padding-bottom: 3rem;
 }
 
 .back {
   display: inline-block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.6rem;
   font-size: 0.9rem;
+  color: var(--tw-muted);
 }
 
 .head-row {
@@ -14,97 +15,199 @@
   align-items: flex-start;
   gap: 1rem;
   flex-wrap: wrap;
+  margin-bottom: 1.25rem;
 }
 
 .danger {
   color: var(--tw-danger);
-  border-color: rgba(248, 113, 113, 0.5);
+  border-color: rgba(220, 38, 38, 0.4);
+}
+
+.danger:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.06);
 }
 
 .layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
+  gap: 1.5rem;
   align-items: start;
 }
 
-@media (max-width: 880px) {
+@media (max-width: 900px) {
   .layout {
     grid-template-columns: 1fr;
   }
 }
 
+.edit-form {
+  background: var(--tw-bg);
+}
+
 .h2 {
   font-size: 1.1rem;
   margin: 0 0 1rem;
-  font-family: var(--tw-font);
+  font-weight: 700;
+}
+
+.city-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.city-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tw-muted);
+  margin: 0;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--tw-border);
+}
+
+.code-input {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   font-weight: 600;
 }
 
-.grid {
+.dates-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 0.75rem 1rem;
-  margin-bottom: 1rem;
+  margin: 1rem 0;
+}
+
+@media (max-width: 420px) {
+  .dates-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rec-panel {
+  position: sticky;
+  top: 5rem;
+}
+
+.note-text {
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+}
+
+.rec-panel h3 {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  margin: 1.25rem 0 0.5rem;
 }
 
 .flight-list {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.5rem;
+  min-height: 272px; /* 4 filas × ~62px → botones de paginación no saltan */
+  justify-content: flex-start;
+}
+
+.flight-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--tw-border);
+}
+
+.pag-info {
+  font-size: 0.8125rem;
+  color: var(--tw-muted);
+  white-space: nowrap;
+}
+
+.pag-btn {
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--tw-radius-sm);
+  border: 1px solid var(--tw-border);
+  background: var(--tw-bg);
+  color: var(--tw-text);
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.pag-btn:hover:not(:disabled) {
+  background: var(--tw-surface-hover);
+  border-color: var(--tw-primary);
+  color: var(--tw-primary);
+}
+
+.pag-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .flight-row {
-  padding: 0.65rem 0.75rem;
+  padding: 0.65rem 0.85rem;
   border-radius: var(--tw-radius-sm);
   background: var(--tw-bg);
   border: 1px solid var(--tw-border);
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.2rem;
 }
 
 .flight-row.in {
-  border-color: rgba(74, 222, 128, 0.45);
+  border-left: 3px solid var(--tw-money);
 }
 
-.detail {
-  font-size: 0.88rem;
+.flight-row-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.tiny {
-  font-size: 0.78rem;
+.flight-row-price {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--tw-primary);
+  font-variant-numeric: tabular-nums;
 }
 
-.small {
-  font-size: 0.88rem;
+.flight-row-detail {
+  font-size: 0.875rem;
+  color: var(--tw-text);
+}
+
+.flight-row-date {
+  font-size: 0.8rem;
 }
 
 .acts {
   margin: 0;
   padding-left: 1.2rem;
   font-size: 0.9rem;
-  color: var(--tw-muted);
 }
 
 .acts li {
-  margin-bottom: 0.35rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--tw-border);
 }
 
-.raw {
-  font-size: 0.72rem;
-  max-height: 240px;
-  overflow: auto;
-  background: var(--tw-bg);
-  padding: 0.75rem;
-  border-radius: 8px;
-  border: 1px solid var(--tw-border);
-  white-space: pre-wrap;
-  word-break: break-word;
+.acts li:last-child {
+  border-bottom: none;
 }
 
-.rec h3 {
-  font-size: 0.95rem;
-  margin: 1rem 0 0.5rem;
-  font-family: var(--tw-font);
+.act-price-inline {
+  font-weight: 600;
+  color: var(--tw-money);
+  white-space: nowrap;
+  font-size: 0.85rem;
 }

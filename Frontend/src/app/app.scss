@@ -5,12 +5,11 @@
 }
 
 .top {
-  background: var(--tw-bg-elevated);
+  background: var(--tw-bg);
   border-bottom: 1px solid var(--tw-border);
   position: sticky;
   top: 0;
   z-index: 50;
-  backdrop-filter: blur(10px);
 }
 
 .top-inner {
@@ -23,45 +22,42 @@
 }
 
 .brand {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-family: var(--tw-display);
-  font-weight: 700;
-  font-size: 1.2rem;
-  color: var(--tw-text);
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--tw-primary);
   text-decoration: none;
+  letter-spacing: -0.02em;
 }
 
 .brand:hover {
-  color: var(--tw-accent);
+  color: var(--tw-primary-hover);
   text-decoration: none;
-}
-
-.brand-mark {
-  color: var(--tw-accent);
-  font-size: 1.1rem;
 }
 
 .nav {
   display: flex;
   gap: 0.25rem 1.25rem;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .nav a {
   color: var(--tw-muted);
-  font-size: 0.92rem;
+  font-size: 0.9375rem;
   font-weight: 500;
   text-decoration: none;
+  padding: 0.25rem 0;
+  border-bottom: 2px solid transparent;
 }
 
 .nav a:hover {
   color: var(--tw-text);
+  text-decoration: none;
 }
 
 .nav a.active {
-  color: var(--tw-accent);
+  color: var(--tw-primary);
+  border-bottom-color: var(--tw-primary);
 }
 
 .auth {
@@ -71,9 +67,35 @@
   flex-wrap: wrap;
 }
 
-.greet {
-  font-size: 0.88rem;
-  color: var(--tw-muted);
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.65rem 0.25rem 0.3rem;
+  background: var(--tw-surface);
+  border: 1px solid var(--tw-border);
+  border-radius: 20px;
+}
+
+.user-avatar {
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--tw-primary);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.user-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--tw-text);
   max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -82,19 +104,48 @@
 
 .main {
   flex: 1;
-  padding: 2rem 0 3rem;
+  width: 100%;
+  padding: 1.75rem 0 3rem;
+  background: var(--tw-bg-subtle);
 }
 
 .foot {
   border-top: 1px solid var(--tw-border);
-  padding: 1.25rem 0;
-  background: var(--tw-bg-elevated);
+  padding: 1.1rem 0;
+  background: var(--tw-bg);
   margin-top: auto;
 }
 
 .foot-inner {
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  font-size: 0.85rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.8125rem;
+}
+
+.foot-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.foot-brand-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--tw-text);
+}
+
+.foot-disclaimer {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 600px) {
+  .foot-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+  }
 }

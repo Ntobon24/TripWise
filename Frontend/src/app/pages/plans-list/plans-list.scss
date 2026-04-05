@@ -33,13 +33,19 @@
   display: block;
   text-decoration: none;
   color: inherit;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
 }
 
 .plan-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--tw-shadow);
+  transform: translateY(-1px);
+  box-shadow: var(--tw-shadow-card);
   text-decoration: none;
+  border-color: #94a3b8;
+}
+
+.plan-card:focus-visible {
+  outline: 2px solid var(--tw-primary);
+  outline-offset: 2px;
 }
 
 .plan-top {
@@ -52,16 +58,16 @@
 .plan-card h2 {
   margin: 0;
   font-size: 1.1rem;
-  font-family: var(--tw-font);
   font-weight: 600;
+  color: var(--tw-text);
 }
 
 .budget {
-  font-family: var(--tw-display);
   font-size: 1.45rem;
   font-weight: 700;
-  color: var(--tw-accent);
+  color: var(--tw-money);
   margin: 0.75rem 0 0.25rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .route {

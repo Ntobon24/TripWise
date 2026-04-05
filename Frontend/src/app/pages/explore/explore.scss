@@ -1,16 +1,9 @@
+.page-wrapper {
+  width: 100%;
+}
+
 .page {
-  padding-bottom: 2rem;
-}
-
-.status-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  margin-bottom: 1.5rem;
-}
-
-.small-hint {
-  font-size: 0.8rem;
+  padding-bottom: 3rem;
 }
 
 .block {
@@ -18,161 +11,256 @@
 }
 
 .block h2 {
-  font-size: 1.35rem;
-  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  margin: 0 0 0.75rem;
 }
 
 .block h3 {
   font-size: 1.1rem;
-  margin: 1.5rem 0 0.65rem;
+  margin: 1.75rem 0 0.75rem;
 }
 
 .search-bar {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
-  margin-bottom: 0.5rem;
+  align-items: flex-end;
+  margin-bottom: 1rem;
 }
 
-.search-bar input {
+.search-bar app-city-typeahead {
   flex: 1;
-  min-width: 200px;
-  padding: 0.55rem 0.75rem;
-  border-radius: var(--tw-radius-sm);
-  border: 1px solid var(--tw-border);
-  background: var(--tw-bg);
-  color: var(--tw-text);
+  min-width: 220px;
 }
 
-.hint-text {
-  font-size: 0.85rem;
-  margin: 0 0 1rem;
+.search-bar app-city-typeahead ::ng-deep .tw-field {
+  margin-bottom: 0;
+}
+
+.btn-dest-search {
+  flex-shrink: 0;
+  align-self: flex-end;
 }
 
 .dest-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1rem;
-}
-
-.dest-card h3 {
-  margin: 0.35rem 0;
-  font-size: 1.05rem;
-  font-family: var(--tw-font);
-  font-weight: 600;
-}
-
-.dest-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.iata {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--tw-accent);
-}
-
-.small {
-  font-size: 0.85rem;
-  margin: 0.25rem 0 0;
-}
-
-.dest-actions {
-  margin-top: 0.75rem;
-  display: flex;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 0.75rem;
 }
 
-.linkish {
-  background: none;
-  border: none;
-  color: var(--tw-accent);
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 600;
-  padding: 0;
-  font-family: inherit;
+.dest-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  cursor: default;
 }
 
-.linkish:hover {
-  text-decoration: underline;
+.dest-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.dest-card h3 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.country-badge {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  background: var(--tw-surface-hover);
+  color: var(--tw-muted);
+  text-transform: uppercase;
+}
+
+.dest-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  flex: 1;
+  background: var(--tw-surface-hover);
+  border: none;
+  border-radius: var(--tw-radius-sm);
+  color: var(--tw-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.5rem;
+  text-align: center;
+  transition: background 0.12s ease;
+}
+
+.action-btn:hover {
+  background: var(--tw-primary-muted);
+  color: var(--tw-primary);
+}
+
+.action-btn--dest:hover {
+  background: rgba(100, 116, 139, 0.15);
+  color: var(--tw-text);
+}
+
+.span-cols {
+  grid-column: 1 / -1;
+}
+
+.rec-block-head {
+  margin-bottom: 1rem;
+}
+
+.rec-block-head h2 {
+  font-size: 1.25rem;
+  margin: 0 0 0.4rem;
 }
 
 .rec-form {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 0.75rem 1rem;
-  margin: 1rem 0;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  background: var(--tw-bg);
 }
 
-.note {
-  margin: 1rem 0;
+.rec-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.btn-search {
+  min-width: 200px;
+}
+
+.rec-results {
+  margin-top: 1.5rem;
 }
 
 .rec-summary {
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin: 1rem 0;
-  font-weight: 600;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1.5rem;
+  padding: 0.85rem 1.1rem;
+  background: var(--tw-surface);
+  border: 1px solid var(--tw-border);
+  border-radius: var(--tw-radius-sm);
+  margin-bottom: 0.5rem;
 }
 
-.flight-grid,
-.act-grid {
+.rec-route {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.note {
+  margin: 0.75rem 0;
+}
+
+.flight-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
+  grid-auto-rows: minmax(128px, auto);
+  align-content: start;
+  min-height: 290px;
+}
+
+.flight-card {
+  cursor: default;
 }
 
 .flight-card.on-budget {
-  border-color: rgba(74, 222, 128, 0.4);
-  background: rgba(74, 222, 128, 0.05);
+  border-left: 3px solid var(--tw-money);
 }
 
-.flight-price {
+.flight-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.4rem;
 }
 
-.route {
+.flight-price {
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--tw-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.flight-route {
+  margin: 0 0 0.25rem;
+  font-size: 0.9rem;
+  color: var(--tw-text);
+}
+
+.flight-date {
+  font-size: 0.8rem;
   margin: 0;
-  font-size: 0.92rem;
+}
+
+.act-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.act-card {
+  cursor: default;
 }
 
 .act-card h4 {
   margin: 0 0 0.35rem;
-  font-size: 1rem;
-  font-family: var(--tw-font);
+  font-size: 0.9375rem;
+  font-weight: 600;
 }
 
-.price-line {
+.act-desc {
+  font-size: 0.85rem;
+  margin: 0 0 0.35rem;
+}
+
+.act-price {
   margin: 0.5rem 0 0;
   font-weight: 600;
-  color: var(--tw-accent);
+  font-size: 0.9rem;
+  color: var(--tw-money);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .cta-banner {
   text-align: center;
   padding: 2rem 1.5rem;
-}
-
-.cta-banner.slim {
-  padding: 1rem;
+  margin-top: 2rem;
 }
 
 .cta-banner h2 {
   margin: 0 0 0.5rem;
 }
 
-.cta-banner-actions {
+.cta-actions {
   display: flex;
   gap: 0.5rem;
   justify-content: center;
   flex-wrap: wrap;
   margin-top: 1rem;
+}
+
+.cta-logged {
+  margin-top: 2rem;
+  text-align: center;
 }

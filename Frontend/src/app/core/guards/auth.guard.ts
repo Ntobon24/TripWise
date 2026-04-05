@@ -1,14 +1,13 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-
-const TOKEN_KEY = 'tw_token';
+import { getStoredToken } from '../session/token.storage';
 
 export const authGuard: CanActivateFn = (_route, state) => {
   const router = inject(Router);
-  if (localStorage.getItem(TOKEN_KEY)) {
+  if (getStoredToken()) {
     return true;
   }
-  router.navigate(['/entrar'], {
+  void router.navigate(['/entrar'], {
     queryParams: { returnUrl: state.url },
   });
   return false;

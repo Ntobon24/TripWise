@@ -1,19 +1,24 @@
+<a class="tw-skip-link" routerLink="/inicio">Ir al contenido</a>
 <div class="shell">
   <header class="top">
     <div class="tw-container top-inner">
-      <a routerLink="/inicio" class="brand">
-        <span class="brand-mark">◇</span>
-        TripWise
-      </a>
-      <nav class="nav">
+      <a routerLink="/inicio" class="brand">TripWise</a>
+      <nav class="nav" aria-label="Principal">
         <a routerLink="/inicio" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Inicio</a>
-        <a routerLink="/explorar" routerLinkActive="active">Destinos</a>
-        <a routerLink="/planes" routerLinkActive="active">Mis planes</a>
+        <a routerLink="/explorar" routerLinkActive="active">Explorar</a>
+        @if (authSvc.user()) {
+          <a routerLink="/planes" routerLinkActive="active">Mis planes</a>
+        }
       </nav>
       <div class="auth">
         @if (authSvc.user(); as u) {
-          <span class="greet">Hola, {{ u.name }}</span>
-          <button type="button" class="tw-btn tw-btn--ghost" (click)="logout()">Salir</button>
+          <div class="user-chip">
+            <span class="user-avatar" aria-hidden="true">{{ u.name ? u.name[0] : '?' }}</span>
+            <span class="user-name" [title]="u.name">{{ u.name }}</span>
+          </div>
+          <button type="button" class="tw-btn tw-btn--ghost tw-btn--ghost-danger" (click)="logout()">
+            Cerrar sesión
+          </button>
         } @else {
           <a routerLink="/entrar" class="tw-btn tw-btn--ghost">Entrar</a>
           <a routerLink="/registro" class="tw-btn">Crear cuenta</a>
@@ -21,13 +26,18 @@
       </div>
     </div>
   </header>
-  <main class="main">
+  <main id="contenido-principal" class="main" tabindex="-1">
     <router-outlet />
   </main>
   <footer class="foot">
     <div class="tw-container foot-inner">
-      <span>TripWise — planifica con tu presupuesto real.</span>
-      <span class="tw-muted">Vuelos (FlightAPI), ciudades (GeoDB), lugares (OpenTripMap).</span>
+      <div class="foot-brand">
+        <strong class="foot-brand-name">TripWise</strong>
+        <span class="tw-muted">© {{ year }}</span>
+      </div>
+      <p class="foot-disclaimer tw-muted">
+        Recomendaciones orientativas; precios y disponibilidad pueden variar.
+      </p>
     </div>
   </footer>
 </div>

@@ -1,26 +1,45 @@
 <div class="auth-wrap">
   <div class="tw-card auth-card">
     <h1>Bienvenido de nuevo</h1>
-    <p class="tw-muted">Entra con el correo y la contraseña de tu cuenta TripWise.</p>
+    <p class="tw-muted">Entra con el correo y la contraseña de tu cuenta.</p>
 
+    @if (sessionHint()) {
+      <p class="tw-alert tw-alert--info" role="status">{{ sessionHint() }}</p>
+    }
     @if (err()) {
-      <p class="tw-error">{{ err() }}</p>
+      <p class="tw-error" role="alert">{{ err() }}</p>
     }
 
-    <form (ngSubmit)="submit()">
+    <form #loginForm="ngForm" (ngSubmit)="submit(loginForm)">
       <div class="tw-field">
-        <label>Correo electrónico</label>
-        <input [(ngModel)]="email" name="email" type="email" required autocomplete="username" />
+        <label for="login-email">Correo electrónico</label>
+        <input
+          id="login-email"
+          [(ngModel)]="email"
+          name="email"
+          type="email"
+          required
+          email
+          autocomplete="username"
+        />
+        @if (loginForm.submitted && loginForm.controls['email']?.invalid) {
+          <p class="tw-field-error">Introduce un correo válido.</p>
+        }
       </div>
       <div class="tw-field">
-        <label>Contraseña</label>
+        <label for="login-password">Contraseña</label>
         <input
+          id="login-password"
           [(ngModel)]="password"
           name="password"
           type="password"
           required
+          minlength="1"
           autocomplete="current-password"
         />
+        @if (loginForm.submitted && loginForm.controls['password']?.errors?.['required']) {
+          <p class="tw-field-error">La contraseña es obligatoria.</p>
+        }
       </div>
       <button type="submit" class="tw-btn wide" [disabled]="busy()">
         {{ busy() ? 'Entrando…' : 'Entrar' }}

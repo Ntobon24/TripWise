@@ -2,9 +2,10 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 import { finalize, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import { clearStoredToken, getStoredToken, TOKEN_KEY } from '../session/token.storage';
 import type { AuthUser, LoginResponse } from '../models/api.types';
 
-export const TOKEN_KEY = 'tw_token';
+export { TOKEN_KEY } from '../session/token.storage';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -15,9 +16,8 @@ export class AuthService {
     return `${environment.apiBaseUrl}${path}`;
   }
 
-  /** HU-3: restaurar sesión al cargar la app */
   refreshSession() {
-    const token = localStorage.getItem(TOKEN_KEY);
+    const token = getStoredToken();
     if (!token) {
       this.user.set(null);
       return;
@@ -25,18 +25,21 @@ export class AuthService {
     this.http.get<{ user: AuthUser }>(this.url('/auth/me')).subscribe({
       next: (r) => this.user.set(r.user),
       error: () => {
-        localStorage.removeItem(TOKEN_KEY);
+        clearStoredToken();
         this.user.set(null);
       },
     });
   }
 
-  /** HU-1 */
+  clearClientSession() {
+    clearStoredToken();
+    this.user.set(null);
+  }
+
   register(body: { name: string; email: string; password: string }) {
     return this.http.post(this.url('/auth/register'), body);
   }
 
-  /** HU-3 */
   login(body: { email: string; password: string }) {
     return this.http.post<LoginResponse>(this.url('/auth/login'), body).pipe(
       tap((res) => {
@@ -54,17 +57,16 @@ export class AuthService {
     );
   }
 
-  /** HU-3 */
   logout() {
     return this.http.post(this.url('/auth/logout'), {}).pipe(
       finalize(() => {
-        localStorage.removeItem(TOKEN_KEY);
+        clearStoredToken();
         this.user.set(null);
       }),
     );
   }
 
   isLoggedIn(): boolean {
-    return !!localStorage.getItem(TOKEN_KEY);
+    return !!getStoredToken();
   }
 }

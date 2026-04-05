@@ -2,104 +2,239 @@
   <a routerLink="/planes" class="back">← Mis planes</a>
   <h1 class="page-title">Nuevo plan de viaje</h1>
   <p class="page-sub tw-muted">
-    Define presupuesto y ruta. Puedes previsualizar vuelos y actividades antes de guardar en tu cuenta.
+    Define presupuesto y ruta. Puedes previsualizar opciones de vuelo y actividades antes de guardar.
   </p>
 
   @if (err()) {
-    <p class="tw-error">{{ err() }}</p>
+    <p class="tw-error" role="alert">{{ err() }}</p>
+  }
+  @if (formErr()) {
+    <p class="tw-field-error" role="alert">{{ formErr() }}</p>
   }
 
-  <div class="layout">
-    <form class="tw-card form">
-      <h2 class="section-title">Datos del viaje</h2>
+  <div class="tw-card form-card">
+    <h2 class="section-title">Datos del viaje</h2>
+    <div class="form-grid">
+      <div class="tw-field span-2">
+        <label for="plan-title">Nombre del plan</label>
+        <input id="plan-title" [(ngModel)]="title" name="title" maxlength="200" />
+      </div>
       <div class="tw-field">
-        <label>Nombre del plan</label>
-        <input [(ngModel)]="title" name="title" />
+        <label for="plan-budget">Presupuesto total (aprox.)</label>
+        <input id="plan-budget" type="number" [(ngModel)]="budgetAmount" name="budget" min="0.01" step="50" required />
       </div>
-      <div class="grid">
+      <div class="tw-field">
+        <label for="plan-currency">Moneda</label>
+        <input
+          id="plan-currency"
+          class="code-input"
+          [(ngModel)]="currency"
+          name="currency"
+          maxlength="8"
+          placeholder="USD"
+        />
+      </div>
+    </div>
+
+    <div class="cities-grid">
+      <div class="city-group">
+        <p class="city-group-label">Origen</p>
+        <app-city-typeahead
+          label="Ciudad"
+          placeholder="Busca la ciudad de origen…"
+          [(cityName)]="originCityName"
+          [(cityCode)]="originCityCode"
+        />
         <div class="tw-field">
-          <label>Presupuesto total (aprox.)</label>
-          <input type="number" [(ngModel)]="budgetAmount" name="budget" min="0.01" step="50" />
-        </div>
-        <div class="tw-field">
-          <label>Moneda</label>
-          <input [(ngModel)]="currency" name="currency" maxlength="8" />
-        </div>
-        <div class="tw-field">
-          <label>Origen — código IATA</label>
-          <input [(ngModel)]="originCityCode" name="oc" maxlength="8" />
-        </div>
-        <div class="tw-field">
-          <label>Origen — ciudad</label>
-          <input [(ngModel)]="originCityName" name="on" />
-        </div>
-        <div class="tw-field">
-          <label>Destino — código</label>
-          <input [(ngModel)]="destinationCityCode" name="dc" maxlength="8" />
-        </div>
-        <div class="tw-field">
-          <label>Destino — ciudad</label>
-          <input [(ngModel)]="destinationCityName" name="dn" />
-        </div>
-        <div class="tw-field">
-          <label>Ida (opcional)</label>
-          <input [(ngModel)]="departureDate" name="dep" placeholder="YYYY-MM-DD" />
-        </div>
-        <div class="tw-field">
-          <label>Vuelta (opcional)</label>
-          <input [(ngModel)]="returnDate" name="ret" placeholder="YYYY-MM-DD" />
+          <label for="origin-iata">Código IATA / país</label>
+          <input
+            id="origin-iata"
+            type="text"
+            class="code-input"
+            [(ngModel)]="originCityCode"
+            name="oc"
+            maxlength="8"
+            placeholder="BOG"
+          />
+          <p class="tw-field-hint">El buscador lo completa; puedes ajustarlo manualmente.</p>
         </div>
       </div>
-      <div class="actions">
-        <button type="button" class="tw-btn tw-btn--secondary" (click)="previewRecommendations()">
-          Previsualizar recomendaciones
-        </button>
+
+      <div class="city-group">
+        <p class="city-group-label">Destino</p>
+        <app-city-typeahead
+          label="Ciudad"
+          placeholder="Busca la ciudad de destino…"
+          [(cityName)]="destinationCityName"
+          [(cityCode)]="destinationCityCode"
+        />
+        <div class="tw-field">
+          <label for="dest-iata">Código IATA / país</label>
+          <input
+            id="dest-iata"
+            type="text"
+            class="code-input"
+            [(ngModel)]="destinationCityCode"
+            name="dc"
+            maxlength="8"
+            placeholder="MAD"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="dates-row">
+      <div class="tw-field">
+        <label for="plan-dep">Fecha de ida</label>
+        <input id="plan-dep" type="date" [(ngModel)]="departureDate" name="dep" [min]="minDate" />
+      </div>
+      <div class="tw-field">
+        <label for="plan-ret">Fecha de vuelta</label>
+        <input id="plan-ret" type="date" [(ngModel)]="returnDate" name="ret" [min]="departureDate || minDate" />
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button
+        type="button"
+        class="tw-btn tw-btn--secondary"
+        [disabled]="previewBusy()"
+        (click)="previewRecommendations()"
+      >
+        {{ previewBusy() ? 'Buscando opciones…' : 'Ver recomendaciones' }}
+      </button>
+      <button type="button" class="tw-btn" [disabled]="busy()" (click)="save()">
+        {{ busy() ? 'Guardando…' : 'Guardar plan' }}
+      </button>
+    </div>
+  </div>
+
+  @if (preview(); as prev) {
+    <div class="preview-section">
+      <div class="preview-header">
+        <h2>Elige tu vuelo y actividades</h2>
+        <p class="tw-muted">
+          Selecciona el vuelo que prefieras — la fecha de ida se actualiza automáticamente. Marca las actividades
+          que te interesen para tenerlas de referencia.
+        </p>
+        @if (prev.meta.note) {
+          <p class="tw-alert tw-alert--info">{{ prev.meta.note }}</p>
+        }
+        @if (prev.meta.message) {
+          <p class="tw-alert tw-alert--warning">{{ prev.meta.message }}</p>
+        }
+        <div class="preview-route">
+          {{ prev.origin.name ?? prev.origin.code }} → {{ prev.destination.name ?? prev.destination.code }}
+        </div>
+      </div>
+
+      <h3>Vuelos disponibles</h3>
+      @if (!prev.flights.length) {
+        <p class="tw-muted">Sin vuelos para esta búsqueda. Prueba con otras fechas o códigos.</p>
+      }
+      <div class="flight-grid">
+        @for (f of pagedFlights; track f.id) {
+          <article
+            class="tw-card flight-card"
+            [class.flight-selected]="selectedFlightId() === f.id"
+            [class.on-budget]="f.withinBudget"
+            role="radio"
+            [attr.aria-checked]="selectedFlightId() === f.id"
+            tabindex="0"
+            (click)="toggleFlight(f)"
+            (keydown.enter)="toggleFlight(f)"
+            (keydown.space)="$event.preventDefault(); toggleFlight(f)"
+          >
+            <div class="flight-check">
+              @if (selectedFlightId() === f.id) {
+                <span class="check-mark">✓</span>
+              }
+            </div>
+            <div class="flight-top">
+              <span class="price-tag">{{ f.totalPrice | number : '1.0-0' }} {{ f.currency }}</span>
+              @if (f.withinBudget) {
+                <span class="tw-badge tw-badge--ok">Dentro del presupuesto</span>
+              } @else {
+                <span class="tw-badge tw-badge--warn">Por encima</span>
+              }
+            </div>
+            <p class="flight-summary">{{ f.summary }}</p>
+            @if (f.departureAt) {
+              <p class="flight-date tw-muted">Sale {{ f.departureAt | date : 'dd MMM yyyy, HH:mm' }}</p>
+            }
+            @if (f.arrivalAt) {
+              <p class="flight-date tw-muted">Llega {{ f.arrivalAt | date : 'dd MMM yyyy, HH:mm' }}</p>
+            }
+          </article>
+        }
+      </div>
+      @if (totalFlightPages > 1) {
+        <div class="flight-pagination">
+          <button
+            type="button"
+            class="tw-btn tw-btn--ghost pag-btn"
+            [disabled]="flightPage === 0"
+            (click)="prevFlightPage()"
+          >← Anterior</button>
+          <span class="pag-info">Página {{ flightPage + 1 }} de {{ totalFlightPages }}</span>
+          <button
+            type="button"
+            class="tw-btn tw-btn--ghost pag-btn"
+            [disabled]="flightPage >= totalFlightPages - 1"
+            (click)="nextFlightPage()"
+          >Siguiente →</button>
+        </div>
+      }
+
+      <h3>Actividades en destino</h3>
+      @if (!prev.activities.length) {
+        <p class="tw-muted">Sin actividades indexadas para este destino.</p>
+      }
+      <div class="act-grid">
+        @for (a of prev.activities; track a.id) {
+          <article
+            class="tw-card act-card"
+            [class.act-selected]="selectedActivityIds().has(a.id)"
+            role="checkbox"
+            [attr.aria-checked]="selectedActivityIds().has(a.id)"
+            tabindex="0"
+            (click)="toggleActivity(a)"
+            (keydown.enter)="toggleActivity(a)"
+            (keydown.space)="$event.preventDefault(); toggleActivity(a)"
+          >
+            <div class="act-check">
+              @if (selectedActivityIds().has(a.id)) {
+                <span class="check-mark">✓</span>
+              }
+            </div>
+            <h4>{{ a.name ?? 'Punto de interés' }}</h4>
+            @if (a.shortDescription) {
+              <p class="act-desc tw-muted">{{ a.shortDescription }}</p>
+            }
+            @if (a.priceAmount != null) {
+              <p class="act-price">
+                Desde {{ a.priceAmount | number : '1.0-0' }} {{ a.priceCurrency ?? '' }}
+                @if (a.withinBudget === true) {
+                  <span class="tw-badge tw-badge--ok">Encaja</span>
+                }
+              </p>
+            }
+          </article>
+        }
+      </div>
+
+      <div class="preview-save-bar">
+        <p class="tw-muted">
+          @if (selectedFlightId()) {
+            Vuelo seleccionado — la fecha de ida se ha actualizado en el formulario.
+          } @else {
+            Selecciona un vuelo para guardar el plan con esa fecha de ida.
+          }
+        </p>
         <button type="button" class="tw-btn" [disabled]="busy()" (click)="save()">
           {{ busy() ? 'Guardando…' : 'Guardar plan' }}
         </button>
       </div>
-    </form>
-
-    @if (preview(); as prev) {
-      <aside class="tw-card preview">
-        <h2 class="section-title">Vista previa</h2>
-        @if (prev.meta.note) {
-          <p class="tw-alert tw-alert--info small">{{ prev.meta.note }}</p>
-        }
-        @if (prev.meta.message) {
-          <p class="tw-alert tw-alert--warning small">{{ prev.meta.message }}</p>
-        }
-        <p class="route-line">
-          {{ prev.origin.name ?? prev.origin.code }} → {{ prev.destination.name ?? prev.destination.code }}
-        </p>
-        <p class="tw-muted small">Fecha sugerida {{ prev.departureDate }}</p>
-
-        <h3>Vuelos</h3>
-        <div class="mini-list">
-          @for (f of prev.flights.slice(0, 6); track f.id) {
-            <div class="mini-card" [class.ok]="f.withinBudget">
-              <strong>{{ f.totalPrice | number : '1.0-0' }} {{ f.currency }}</strong>
-              <span class="tw-muted tiny">{{ f.summary }}</span>
-            </div>
-          } @empty {
-            <p class="tw-muted small">Sin vuelos en esta búsqueda.</p>
-          }
-        </div>
-
-        <h3>Actividades</h3>
-        <ul class="act-list">
-          @for (a of prev.activities.slice(0, 5); track a.id) {
-            <li>
-              <span>{{ a.name }}</span>
-              @if (a.priceAmount != null) {
-                <span class="price">{{ a.priceAmount | number : '1.0-0' }} {{ a.priceCurrency }}</span>
-              }
-            </li>
-          } @empty {
-            <li class="tw-muted">Sin actividades listadas.</li>
-          }
-        </ul>
-      </aside>
-    }
-  </div>
+    </div>
+  }
 </div>

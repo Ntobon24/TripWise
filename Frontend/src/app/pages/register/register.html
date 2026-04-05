@@ -1,34 +1,61 @@
 <div class="auth-wrap">
   <div class="tw-card auth-card">
     <h1>Crea tu cuenta</h1>
-    <p class="tw-muted">Nombre, correo y contraseña segura (mín. 8 caracteres, letra y número).</p>
+    <p class="tw-muted">Nombre, correo y contraseña segura: mínimo 8 caracteres, al menos una letra y un número.</p>
 
     @if (err()) {
-      <p class="tw-error">{{ err() }}</p>
-    }
-    @if (ok()) {
-      <p class="tw-ok">¡Listo! Te llevamos al inicio de sesión…</p>
+      <p class="tw-error" role="alert">{{ err() }}</p>
     }
 
-    <form (ngSubmit)="submit()">
+    <form #regForm="ngForm" (ngSubmit)="submit(regForm)">
       <div class="tw-field">
-        <label>Nombre</label>
-        <input [(ngModel)]="name" name="name" required minlength="2" />
-      </div>
-      <div class="tw-field">
-        <label>Correo</label>
-        <input [(ngModel)]="email" name="email" type="email" required autocomplete="email" />
-      </div>
-      <div class="tw-field">
-        <label>Contraseña</label>
+        <label for="reg-name">Nombre</label>
         <input
+          id="reg-name"
+          [(ngModel)]="name"
+          name="name"
+          required
+          minlength="2"
+          maxlength="120"
+          autocomplete="name"
+        />
+        @if (regForm.submitted && regForm.controls['name']?.errors?.['minlength']) {
+          <p class="tw-field-error">El nombre debe tener al menos 2 caracteres.</p>
+        }
+      </div>
+      <div class="tw-field">
+        <label for="reg-email">Correo</label>
+        <input
+          id="reg-email"
+          [(ngModel)]="email"
+          name="email"
+          type="email"
+          required
+          email
+          autocomplete="email"
+        />
+        @if (regForm.submitted && regForm.controls['email']?.invalid) {
+          <p class="tw-field-error">Introduce un correo válido.</p>
+        }
+      </div>
+      <div class="tw-field">
+        <label for="reg-password">Contraseña</label>
+        <input
+          id="reg-password"
           [(ngModel)]="password"
           name="password"
           type="password"
           required
           minlength="8"
+          [pattern]="pwdPattern"
           autocomplete="new-password"
         />
+        @if (regForm.submitted && regForm.controls['password']?.errors?.['minlength']) {
+          <p class="tw-field-error">Mínimo 8 caracteres.</p>
+        }
+        @if (regForm.submitted && regForm.controls['password']?.errors?.['pattern']) {
+          <p class="tw-field-error">Incluye al menos una letra y un número.</p>
+        }
       </div>
       <button type="submit" class="tw-btn wide" [disabled]="busy()">
         {{ busy() ? 'Creando…' : 'Crear cuenta' }}
