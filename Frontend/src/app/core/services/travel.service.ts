@@ -52,4 +52,13 @@ export class TravelService {
       params: p,
     });
   }
+
+  autoPlan(params: { budget: number; originCityCode: string; originCityName?: string }) {
+    const p: Record<string, string> = {
+      budget: String(params.budget),
+      originCityCode: params.originCityCode,
+    };
+    if (params.originCityName) p['originCityName'] = params.originCityName;
+    return this.http.get<RecommendationsPayload>(this.url('/travel/auto-plan'), { params: p });
+  }
 }

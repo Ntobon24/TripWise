@@ -6,6 +6,7 @@ import type { JwtModuleOptions } from '@nestjs/jwt';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { buildTypeOrmOptions } from './config/database.config';
+import { SchemaBootstrapService } from './config/schema-bootstrap.service';
 import { AuthModule } from './auth/auth.module';
 import { PlansModule } from './plans/plans.module';
 import { TravelModule } from './travel/travel.module';
@@ -41,6 +42,6 @@ import { SupabaseModule } from './supabase/supabase.module';
     PlansModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, SchemaBootstrapService],
 })
 export class AppModule {}

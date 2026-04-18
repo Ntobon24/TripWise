@@ -28,7 +28,8 @@ export class OpenTripMapService {
       radius: String(params.radiusMeters ?? 8000),
       lon: String(params.lng),
       lat: String(params.lat),
-      rate: '2',
+      rate: '3',
+      kinds: 'interesting_places,cultural,historic,architecture,museums,natural',
       limit: String(Math.min(params.limit ?? 25, 50)),
       apikey: key,
     });

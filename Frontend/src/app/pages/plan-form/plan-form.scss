@@ -27,6 +27,52 @@
   margin-bottom: 1.25rem;
 }
 
+.budget-highlight {
+  margin-bottom: 1rem;
+  border: 2px solid rgba(37, 99, 235, 0.25);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(16, 185, 129, 0.08));
+}
+
+.budget-label {
+  margin: 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--tw-muted);
+}
+
+.budget-total {
+  margin: 0.35rem 0;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--tw-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.budget-inline {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.budget-negative {
+  color: var(--tw-danger);
+}
+
+.decide-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  border: 1px dashed var(--tw-border);
+  border-radius: var(--tw-radius-sm);
+  padding: 0.65rem 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.decide-toggle small {
+  display: block;
+  color: var(--tw-muted);
+}
+
 .span-2 {
   grid-column: span 2;
 }
@@ -236,10 +282,35 @@
   margin: 0.5rem 0 0;
   font-weight: 600;
   font-size: 0.9rem;
-  color: var(--tw-money);
+  color: #d97706;
   display: flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+.act-meta {
+  margin: 0.3rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+}
+
+.activity-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+}
+
+.activity-filter label {
+  font-size: 0.85rem;
+  color: var(--tw-muted);
+}
+
+.activity-filter select {
+  min-width: 170px;
 }
 
 .preview-save-bar {

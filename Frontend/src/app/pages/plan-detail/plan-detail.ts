@@ -3,7 +3,12 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PlansService } from '../../core/services/plans.service';
-import type { RecommendationsPayload, TravelPlanSummary } from '../../core/models/api.types';
+import type {
+  ActivitySummary,
+  FlightOfferSummary,
+  RecommendationsPayload,
+  TravelPlanSummary,
+} from '../../core/models/api.types';
 import { CityTypeaheadComponent } from '../../shared/components/city-typeahead/city-typeahead';
 
 @Component({
@@ -101,6 +106,10 @@ export class PlanDetail implements OnInit {
       this.formErr.set('La fecha de ida no es válida.');
       return;
     }
+    if (this.departureDate && this.departureDate < this.minDate) {
+      this.formErr.set('La fecha de ida no puede ser anterior a hoy.');
+      return;
+    }
     if (this.returnDate && !/^\d{4}-\d{2}-\d{2}$/.test(this.returnDate)) {
       this.formErr.set('La fecha de vuelta no es válida.');
       return;
@@ -132,7 +141,7 @@ export class PlanDetail implements OnInit {
         next: (p) => {
           this.plan.set(p);
           this.flightPage = 0;
-          this.ok.set('Cambios guardados. Las recomendaciones se han actualizado.');
+          this.ok.set('Cambios guardados.');
           this.busy.set(false);
         },
         error: (e) => {
@@ -162,6 +171,38 @@ export class PlanDetail implements OnInit {
       return null;
     }
     return r as RecommendationsPayload;
+  }
+
+  protected selectedFlight(): FlightOfferSummary | null {
+    const fromPlan = this.plan()?.selectedFlight;
+    if (fromPlan && typeof fromPlan === 'object') {
+      return fromPlan;
+    }
+    return this.recPayload()?.flights?.[0] ?? null;
+  }
+
+  protected selectedActivities(): ActivitySummary[] {
+    const fromPlan = this.plan()?.selectedActivities;
+    if (Array.isArray(fromPlan) && fromPlan.length > 0) {
+      return fromPlan;
+    }
+    return this.recPayload()?.activities ?? [];
+  }
+
+  protected selectedFlightCost(): number {
+    return this.selectedFlight()?.totalPrice ?? 0;
+  }
+
+  protected selectedActivitiesCost(): number {
+    return this.selectedActivities().reduce((sum, a) => sum + (a.priceAmount ?? 0), 0);
+  }
+
+  protected selectedTotalCost(): number {
+    return this.selectedFlightCost() + this.selectedActivitiesCost();
+  }
+
+  protected remainingBudget(): number {
+    return this.budgetAmount - this.selectedTotalCost();
   }
 
   private msg(e: unknown, fallback: string): string {

@@ -179,10 +179,7 @@
                 }
                 @if (a.priceAmount != null) {
                   <p class="act-price">
-                    Desde {{ a.priceAmount | number : '1.0-0' }} {{ a.priceCurrency ?? '' }}
-                    @if (a.withinBudget === true) {
-                      <span class="tw-badge tw-badge--ok">Encaja</span>
-                    }
+                    Estimado {{ a.priceAmount | number : '1.0-0' }} {{ a.priceCurrency ?? '' }}
                   </p>
                 }
               </article>

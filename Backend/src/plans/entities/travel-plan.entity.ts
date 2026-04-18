@@ -51,6 +51,15 @@ export class TravelPlan {
   @Column({ name: 'recommendations_json', type: 'jsonb', nullable: true })
   recommendationsJson: Record<string, unknown> | null;
 
+  @Column({ name: 'selected_flight_json', type: 'jsonb', nullable: true })
+  selectedFlightJson: Record<string, unknown> | null;
+
+  @Column({ name: 'selected_activities_json', type: 'jsonb', nullable: true })
+  selectedActivitiesJson: Record<string, unknown>[] | null;
+
+  @Column({ name: 'selections_locked', type: 'boolean', default: false })
+  selectionsLocked: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

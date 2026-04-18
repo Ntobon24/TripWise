@@ -23,6 +23,9 @@ export type TravelPlanSummary = {
   departureDate: string | null;
   returnDate: string | null;
   recommendations: unknown;
+  selectedFlight?: FlightOfferSummary | null;
+  selectedActivities?: ActivitySummary[];
+  selectionsLocked?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -83,8 +86,11 @@ export type ActivitySummary = {
   id: string;
   name: string | null;
   shortDescription: string | null;
+  category: string | null;
+  popularity: number | null;
   priceAmount: number | null;
   priceCurrency: string | null;
+  estimatedPrice: boolean;
   withinBudget: boolean | null;
 };
 

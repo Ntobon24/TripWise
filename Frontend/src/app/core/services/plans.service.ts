@@ -1,7 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment';
-import type { PlansListResponse, TravelPlanSummary } from '../models/api.types';
+import type {
+  ActivitySummary,
+  FlightOfferSummary,
+  PlansListResponse,
+  TravelPlanSummary,
+} from '../models/api.types';
 
 export type PlanPayload = {
   title?: string;
@@ -13,6 +18,9 @@ export type PlanPayload = {
   destinationCityName?: string;
   departureDate?: string;
   returnDate?: string;
+  lockSelections?: boolean;
+  selectedFlight?: FlightOfferSummary | null;
+  selectedActivities?: ActivitySummary[];
 };
 
 @Injectable({ providedIn: 'root' })

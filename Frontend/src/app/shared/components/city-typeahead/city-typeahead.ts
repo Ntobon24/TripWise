@@ -36,6 +36,7 @@ export class CityTypeaheadComponent implements OnChanges {
   @Input() label = '';
   @Input() hint = '';
   @Input() placeholder = 'Escribe el nombre de la ciudad…';
+  @Input() disabled = false;
 
   @Input() cityName = '';
   @Input() cityCode = '';
@@ -92,6 +93,7 @@ export class CityTypeaheadComponent implements OnChanges {
   }
 
   protected onFocus(): void {
+    if (this.disabled) return;
     this.isEditing = true;
     this.displayValue = this.cityName;
     if (this.displayValue.trim().length >= 2) {
@@ -100,6 +102,7 @@ export class CityTypeaheadComponent implements OnChanges {
   }
 
   protected onSearch(val: string): void {
+    if (this.disabled) return;
     this.open = true;
     this.query$.next(val);
   }
@@ -114,6 +117,7 @@ export class CityTypeaheadComponent implements OnChanges {
   }
 
   protected pick(c: UnifiedCity): void {
+    if (this.disabled) return;
     const code = (c.code ?? '').toUpperCase();
 
     this.cityName = c.name;

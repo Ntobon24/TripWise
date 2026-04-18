@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TravelPlan } from './entities/travel-plan.entity';
@@ -7,6 +7,7 @@ import { UpdateTravelPlanDto } from './dto/update-plan.dto';
 import { RecommendationsService } from '../travel/recommendations.service';
 
 const EMPTY_MESSAGE = 'No hay planes disponibles. Crea tu primer plan de viaje.';
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 @Injectable()
 export class PlansService {
@@ -17,6 +18,12 @@ export class PlansService {
   ) {}
 
   async create(userId: string, dto: CreateTravelPlanDto) {
+    this.validateDates(dto.departureDate, dto.returnDate);
+    const selectedFlight = this.toRecordOrNull(dto.selectedFlight);
+    const selectedActivities = this.toRecordArray(dto.selectedActivities);
+    const hasSelections =
+      Boolean(selectedFlight) || Boolean(selectedActivities.length);
+
     const plan = this.plans.create({
       userId,
       title: dto.title?.trim() || 'Mi viaje',
@@ -28,9 +35,14 @@ export class PlansService {
       destinationCityName: dto.destinationCityName?.trim() ?? null,
       departureDate: dto.departureDate ?? null,
       returnDate: dto.returnDate ?? null,
+      selectedFlightJson: selectedFlight,
+      selectedActivitiesJson: selectedActivities,
+      selectionsLocked: dto.lockSelections ?? hasSelections,
     });
 
-    plan.recommendationsJson = await this.maybeRefreshRecommendations(plan);
+    plan.recommendationsJson = hasSelections
+      ? this.buildSelectionsSnapshot(plan)
+      : await this.maybeRefreshRecommendations(plan);
     const saved = await this.plans.save(plan);
     return this.mapPlan(saved);
   }
@@ -60,6 +72,10 @@ export class PlansService {
     if (!plan) {
       throw new NotFoundException('Plan no encontrado.');
     }
+    this.validateDates(
+      dto.departureDate ?? plan.departureDate ?? undefined,
+      dto.returnDate ?? plan.returnDate ?? undefined,
+    );
 
     if (dto.title !== undefined) {
       plan.title = dto.title.trim();
@@ -88,8 +104,25 @@ export class PlansService {
     if (dto.returnDate !== undefined) {
       plan.returnDate = dto.returnDate ?? null;
     }
+    if (dto.selectedFlight !== undefined) {
+      plan.selectedFlightJson = this.toRecordOrNull(dto.selectedFlight);
+    }
+    if (dto.selectedActivities !== undefined) {
+      plan.selectedActivitiesJson = this.toRecordArray(dto.selectedActivities);
+    }
+    if (dto.lockSelections !== undefined) {
+      plan.selectionsLocked = dto.lockSelections;
+    } else if (dto.selectedFlight !== undefined || dto.selectedActivities !== undefined) {
+      plan.selectionsLocked = true;
+    }
 
-    plan.recommendationsJson = await this.maybeRefreshRecommendations(plan);
+    const shouldKeepSelections =
+      plan.selectionsLocked &&
+      (Boolean(plan.selectedFlightJson) || Boolean(plan.selectedActivitiesJson?.length));
+    plan.recommendationsJson = shouldKeepSelections
+      ? this.buildSelectionsSnapshot(plan)
+      : await this.maybeRefreshRecommendations(plan);
+
     const saved = await this.plans.save(plan);
     return this.mapPlan(saved);
   }
@@ -115,9 +148,62 @@ export class PlansService {
       departureDate: plan.departureDate,
       returnDate: plan.returnDate,
       recommendations: plan.recommendationsJson,
+      selectedFlight: plan.selectedFlightJson,
+      selectedActivities: plan.selectedActivitiesJson ?? [],
+      selectionsLocked: plan.selectionsLocked,
       createdAt: plan.createdAt,
       updatedAt: plan.updatedAt,
     };
+  }
+
+  private buildSelectionsSnapshot(plan: TravelPlan) {
+    return {
+      budget: parseFloat(plan.budgetAmount),
+      currency: plan.currency,
+      origin: { code: plan.originCityCode, name: plan.originCityName },
+      destination: { code: plan.destinationCityCode, name: plan.destinationCityName },
+      departureDate: plan.departureDate,
+      flights: plan.selectedFlightJson ? [plan.selectedFlightJson] : [],
+      activities: plan.selectedActivitiesJson ?? [],
+      meta: {
+        source: 'saved-plan-selection',
+        locked: true,
+        note: 'Mostrando únicamente vuelo y actividades seleccionadas.',
+      },
+    } as Record<string, unknown>;
+  }
+
+  private toRecordOrNull(value: unknown): Record<string, unknown> | null {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return null;
+    }
+    return value as Record<string, unknown>;
+  }
+
+  private toRecordArray(value: unknown): Record<string, unknown>[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    return value.filter(
+      (item): item is Record<string, unknown> =>
+        Boolean(item) && typeof item === 'object' && !Array.isArray(item),
+    );
+  }
+
+  private validateDates(departureDate?: string, returnDate?: string) {
+    const todayIso = new Date().toISOString().slice(0, 10);
+    if (departureDate && !DATE_RE.test(departureDate)) {
+      throw new BadRequestException('La fecha de ida no es válida.');
+    }
+    if (returnDate && !DATE_RE.test(returnDate)) {
+      throw new BadRequestException('La fecha de regreso no es válida.');
+    }
+    if (departureDate && departureDate < todayIso) {
+      throw new BadRequestException('La fecha de ida no puede ser anterior a hoy.');
+    }
+    if (departureDate && returnDate && returnDate < departureDate) {
+      throw new BadRequestException('La fecha de regreso no puede ser anterior a la ida.');
+    }
   }
 
   private async maybeRefreshRecommendations(plan: TravelPlan) {

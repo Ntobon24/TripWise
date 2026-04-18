@@ -93,55 +93,69 @@
       </form>
 
       <section class="tw-card rec-panel">
-        <h2 class="h2">Recomendaciones</h2>
-        @if (recPayload(); as rec) {
-          @if (rec.meta.note) {
-            <p class="tw-muted note-text">{{ rec.meta.note }}</p>
-          }
-          <h3>Vuelos</h3>
+        <h2 class="h2">Presupuesto total</h2>
+        <div class="budget-summary">
+          <div class="budget-row">
+            <span>Presupuesto del viaje</span>
+            <strong>{{ budgetAmount | number : '1.0-0' }} {{ p.currency }}</strong>
+          </div>
+          <div class="budget-row">
+            <span>Vuelo seleccionado</span>
+            <strong>- {{ selectedFlightCost() | number : '1.0-0' }} {{ p.currency }}</strong>
+          </div>
+          <div class="budget-row">
+            <span>Actividades seleccionadas</span>
+            <strong>- {{ selectedActivitiesCost() | number : '1.0-0' }} {{ p.currency }}</strong>
+          </div>
+          <div class="budget-total-row" [class.over]="remainingBudget() < 0">
+            <span>{{ remainingBudget() >= 0 ? 'Te sobra' : 'Te excediste' }}</span>
+            <strong>{{ (remainingBudget() >= 0 ? remainingBudget() : -remainingBudget()) | number : '1.0-0' }} {{ p.currency }}</strong>
+          </div>
+        </div>
+
+        <h3>Vuelo elegido</h3>
+        @if (selectedFlight(); as f) {
           <div class="flight-list">
-            @for (f of pagedFlights; track f.id) {
-              <div class="flight-row" [class.in]="f.withinBudget">
-                <div class="flight-row-top">
-                  <span class="flight-row-price">{{ f.totalPrice | number : '1.0-0' }} {{ f.currency }}</span>
-                  @if (f.withinBudget) {
-                    <span class="tw-badge tw-badge--ok">Dentro</span>
-                  }
-                </div>
-                <span class="flight-row-detail">{{ f.summary }}</span>
-                @if (f.departureAt) {
-                  <span class="tw-muted flight-row-date">{{ f.departureAt | date : 'dd MMM yyyy, HH:mm' }}</span>
+            <div class="flight-row" [class.in]="f.withinBudget">
+              <div class="flight-row-top">
+                <span class="flight-row-price">{{ f.totalPrice | number : '1.0-0' }} {{ f.currency }}</span>
+                @if (f.withinBudget) {
+                  <span class="tw-badge tw-badge--ok">Dentro</span>
                 }
               </div>
-            } @empty {
-              <p class="tw-muted">Sin vuelos en el último cálculo.</p>
-            }
-          </div>
-          @if (totalFlightPages > 1) {
-            <div class="flight-pagination">
-              <button type="button" class="pag-btn" [disabled]="flightPage === 0" (click)="prevFlightPage()">← Anterior</button>
-              <span class="pag-info">{{ flightPage + 1 }} / {{ totalFlightPages }}</span>
-              <button type="button" class="pag-btn" [disabled]="flightPage === totalFlightPages - 1" (click)="nextFlightPage()">Siguiente →</button>
+              <span class="flight-row-detail">{{ f.summary }}</span>
+              @if (f.departureAt) {
+                <span class="tw-muted flight-row-date">{{ f.departureAt | date : 'dd MMM yyyy, HH:mm' }}</span>
+              }
             </div>
-          }
-          <h3>Actividades</h3>
-          <ul class="acts">
-            @for (a of rec.activities; track a.id) {
-              <li>
-                <span>{{ a.name }}</span>
-                @if (a.priceAmount != null) {
-                  <span class="act-price-inline">{{ a.priceAmount | number : '1.0-0' }} {{ a.priceCurrency }}</span>
-                }
-              </li>
-            } @empty {
-              <li class="tw-muted">No hay actividades en esta lista.</li>
-            }
-          </ul>
+          </div>
         } @else {
-          <p class="tw-muted">
-            Guarda el plan con origen, destino y presupuesto para generar recomendaciones de vuelos y actividades.
-          </p>
+          <p class="tw-muted">No hay vuelo seleccionado en este plan.</p>
         }
+
+        <h3>Actividades elegidas</h3>
+        <ul class="acts">
+          @for (a of selectedActivities(); track a.id) {
+            <li>
+              <span>
+                {{ a.name || 'Actividad seleccionada' }}
+                @if (a.category) {
+                  <small class="tw-muted">· {{ a.category }}</small>
+                }
+              </span>
+              @if (a.priceAmount != null) {
+                <span class="act-price-inline">
+                  {{ a.estimatedPrice ? 'Estimado' : '' }}
+                  {{ a.priceAmount | number : '1.0-0' }} {{ a.priceCurrency || p.currency }}
+                </span>
+              } @else {
+                <span class="tw-muted">Sin precio</span>
+              }
+            </li>
+          } @empty {
+            <li class="tw-muted">No hay actividades guardadas en este plan.</li>
+          }
+        </ul>
       </section>
     </div>
   }

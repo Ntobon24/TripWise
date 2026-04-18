@@ -93,8 +93,12 @@ export class Explore implements OnInit {
     }
     const oc = this.originCode.trim().toUpperCase();
     const dc = this.destCode.trim().toUpperCase();
-    if (!/^[A-Z0-9]{2,8}$/.test(oc) || !/^[A-Z0-9]{2,8}$/.test(dc)) {
-      this.formErr.set('Indica código de origen y destino válidos (2–8 caracteres).');
+    if (!/^[A-Z0-9]{2,8}$/.test(oc)) {
+      this.formErr.set('Indica un código de origen válido (2–8 caracteres).');
+      return;
+    }
+    if (!/^[A-Z0-9]{2,8}$/.test(dc)) {
+      this.formErr.set('Indica un código de destino válido (2–8 caracteres).');
       return;
     }
     if (this.departureDate && !/^\d{4}-\d{2}-\d{2}$/.test(this.departureDate)) {

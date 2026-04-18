@@ -7,6 +7,7 @@ import { ViatorService } from './viator.service';
 import { RecommendationsService } from './recommendations.service';
 import { RecommendationsQueryDto } from './dto/recommendations-query.dto';
 import { CitiesSearchQueryDto } from './dto/cities-search-query.dto';
+import { AutoPlanQueryDto } from './dto/auto-plan-query.dto';
 import { mapGeodbCity, type UnifiedCity } from './mappers/city-result.mapper';
 
 
@@ -82,6 +83,15 @@ export class TravelController {
       originCityName: query.originCityName,
       destinationCityName: query.destinationCityName,
       departureDate: query.departureDate,
+    });
+  }
+
+  @Get('auto-plan')
+  async getAutoPlan(@Query() query: AutoPlanQueryDto) {
+    return this.recommendationsService.buildAutoPlan({
+      budget: query.budget,
+      originCityCode: query.originCityCode,
+      originCityName: query.originCityName,
     });
   }
 }

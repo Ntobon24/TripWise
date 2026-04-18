@@ -14,10 +14,23 @@
 
   <div class="tw-card form-card">
     <h2 class="section-title">Datos del viaje</h2>
+    <div class="budget-highlight tw-card">
+      <p class="budget-label">Presupuesto de este viaje</p>
+      <p class="budget-total">{{ budgetAmount | number : '1.0-0' }} {{ currency || 'USD' }}</p>
+      <p class="budget-inline">
+        Seleccionado:
+        <strong>{{ selectedTotalCost() | number : '1.0-0' }} {{ currency || 'USD' }}</strong>
+        · Disponible:
+        <strong [class.budget-negative]="remainingBudget() < 0">
+          {{ remainingBudget() | number : '1.0-0' }} {{ currency || 'USD' }}
+        </strong>
+      </p>
+    </div>
+
     <div class="form-grid">
       <div class="tw-field span-2">
         <label for="plan-title">Nombre del plan</label>
-        <input id="plan-title" [(ngModel)]="title" name="title" maxlength="200" />
+        <input id="plan-title" [(ngModel)]="title" name="title" maxlength="200" [disabled]="decideForMe" />
       </div>
       <div class="tw-field">
         <label for="plan-budget">Presupuesto total (aprox.)</label>
@@ -30,6 +43,7 @@
           class="code-input"
           [(ngModel)]="currency"
           name="currency"
+          [disabled]="decideForMe"
           maxlength="8"
           placeholder="USD"
         />
@@ -83,14 +97,22 @@
       </div>
     </div>
 
+    <label class="decide-toggle">
+      <input type="checkbox" [ngModel]="decideForMe" (ngModelChange)="onDecideForMeToggle($event)" name="decideForMe" />
+      <span>
+        <strong>Decide por mi</strong>
+        <small>Bloquea fecha, moneda y titulo. Prioriza vuelo y luego actividades con el saldo restante.</small>
+      </span>
+    </label>
+
     <div class="dates-row">
       <div class="tw-field">
         <label for="plan-dep">Fecha de ida</label>
-        <input id="plan-dep" type="date" [(ngModel)]="departureDate" name="dep" [min]="minDate" />
+        <input id="plan-dep" type="date" [(ngModel)]="departureDate" name="dep" [min]="minDate" [disabled]="decideForMe" />
       </div>
       <div class="tw-field">
         <label for="plan-ret">Fecha de vuelta</label>
-        <input id="plan-ret" type="date" [(ngModel)]="returnDate" name="ret" [min]="departureDate || minDate" />
+        <input id="plan-ret" type="date" [(ngModel)]="returnDate" name="ret" [min]="departureDate || minDate" [disabled]="decideForMe" />
       </div>
     </div>
 
@@ -98,13 +120,13 @@
       <button
         type="button"
         class="tw-btn tw-btn--secondary"
-        [disabled]="previewBusy()"
+        [disabled]="previewBusy() || decideForMe"
         (click)="previewRecommendations()"
       >
         {{ previewBusy() ? 'Buscando opciones…' : 'Ver recomendaciones' }}
       </button>
       <button type="button" class="tw-btn" [disabled]="busy()" (click)="save()">
-        {{ busy() ? 'Guardando…' : 'Guardar plan' }}
+        {{ busy() ? 'Guardando…' : (decideForMe ? 'Generar y guardar plan' : 'Guardar plan') }}
       </button>
     </div>
   </div>
@@ -190,38 +212,71 @@
       @if (!prev.activities.length) {
         <p class="tw-muted">Sin actividades indexadas para este destino.</p>
       }
+      <div class="activity-filter">
+        <label for="act-cat">Categoria</label>
+        <select
+          id="act-cat"
+          [ngModel]="activityCategoryFilter"
+          (ngModelChange)="onActivityCategoryChange($event)"
+          name="actCategory"
+        >
+          @for (cat of activityCategories; track cat) {
+            <option [ngValue]="cat">{{ cat }}</option>
+          }
+        </select>
+      </div>
       <div class="act-grid">
-        @for (a of prev.activities; track a.id) {
+        @for (item of pagedActivities; track activityTrackKey(item)) {
           <article
             class="tw-card act-card"
-            [class.act-selected]="selectedActivityIds().has(a.id)"
+            [class.act-selected]="isActivitySelected(item.key)"
             role="checkbox"
-            [attr.aria-checked]="selectedActivityIds().has(a.id)"
+            [attr.aria-checked]="isActivitySelected(item.key)"
             tabindex="0"
-            (click)="toggleActivity(a)"
-            (keydown.enter)="toggleActivity(a)"
-            (keydown.space)="$event.preventDefault(); toggleActivity(a)"
+            (click)="toggleActivity(item)"
+            (keydown.enter)="toggleActivity(item)"
+            (keydown.space)="$event.preventDefault(); toggleActivity(item)"
           >
             <div class="act-check">
-              @if (selectedActivityIds().has(a.id)) {
+              @if (isActivitySelected(item.key)) {
                 <span class="check-mark">✓</span>
               }
             </div>
-            <h4>{{ a.name ?? 'Punto de interés' }}</h4>
-            @if (a.shortDescription) {
-              <p class="act-desc tw-muted">{{ a.shortDescription }}</p>
+            <h4>{{ item.value.name ?? 'Punto de interés' }}</h4>
+            @if (item.value.shortDescription) {
+              <p class="act-desc tw-muted">{{ item.value.shortDescription }}</p>
             }
-            @if (a.priceAmount != null) {
+            <p class="act-meta">
+              <span class="tw-badge">{{ item.value.category ?? 'Turismo' }}</span>
+              @if (item.value.popularity != null) {
+                <span class="tw-muted">Popularidad {{ item.value.popularity | number : '1.0-1' }}/7</span>
+              }
+            </p>
+            @if (item.value.priceAmount != null) {
               <p class="act-price">
-                Desde {{ a.priceAmount | number : '1.0-0' }} {{ a.priceCurrency ?? '' }}
-                @if (a.withinBudget === true) {
-                  <span class="tw-badge tw-badge--ok">Encaja</span>
-                }
+                Estimado
+                {{ item.value.priceAmount | number : '1.0-0' }} {{ item.value.priceCurrency ?? '' }}
               </p>
             }
           </article>
         }
       </div>
+      @if (totalActivityPages > 1) {
+        <div class="flight-pagination">
+          <button type="button" class="tw-btn tw-btn--ghost pag-btn" [disabled]="activityPage === 0" (click)="prevActivityPage()">
+            ← Anterior
+          </button>
+          <span class="pag-info">Página {{ activityPage + 1 }} de {{ totalActivityPages }}</span>
+          <button
+            type="button"
+            class="tw-btn tw-btn--ghost pag-btn"
+            [disabled]="activityPage >= totalActivityPages - 1"
+            (click)="nextActivityPage()"
+          >
+            Siguiente →
+          </button>
+        </div>
+      }
 
       <div class="preview-save-bar">
         <p class="tw-muted">
