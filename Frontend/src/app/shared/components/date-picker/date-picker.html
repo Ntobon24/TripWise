@@ -1,0 +1,98 @@
+<div class="dp-wrap" [class.dp-open]="open" [class.dp-disabled]="disabled">
+
+  <button
+    type="button"
+    class="dp-trigger"
+    [disabled]="disabled"
+    (click)="toggleCalendar()"
+    [attr.aria-expanded]="open"
+    aria-haspopup="dialog"
+  >
+    <svg class="dp-cal-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fill-rule="evenodd" d="M5.75 2a.75.75 0 01.75.75V4h7V2.75a.75.75 0 011.5 0V4h.25A2.75 2.75 0 0118 6.75v8.5A2.75 2.75 0 0115.25 18H4.75A2.75 2.75 0 012 15.25v-8.5A2.75 2.75 0 014.75 4H5V2.75A.75.75 0 015.75 2zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75z" clip-rule="evenodd"/>
+    </svg>
+
+    <span class="dp-display-value" [class.dp-placeholder]="!value">
+      {{ value ? formattedValue : placeholder }}
+    </span>
+
+    @if (value && !disabled) {
+      <button
+        type="button"
+        class="dp-clear"
+        (click)="clearDate($event)"
+        aria-label="Limpiar fecha"
+        title="Limpiar fecha"
+      >
+        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"/>
+        </svg>
+      </button>
+    }
+
+    <svg class="dp-chevron" [class.dp-chevron--up]="open" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+    </svg>
+  </button>
+
+  @if (open) {
+    <div class="dp-panel" role="dialog" aria-label="Seleccionar fecha">
+
+      <div class="dp-nav">
+        <button
+          type="button"
+          class="dp-nav-btn"
+          [disabled]="!canGoPrev"
+          (click)="prevMonth()"
+          aria-label="Mes anterior"
+        >
+          <svg viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+
+        <span class="dp-month-label">{{ MONTHS[viewMonth] }} {{ viewYear }}</span>
+
+        <button
+          type="button"
+          class="dp-nav-btn"
+          (click)="nextMonth()"
+          aria-label="Mes siguiente"
+        >
+          <svg viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="dp-grid">
+        @for (h of WEEK; track h) {
+          <div class="dp-weekday">{{ h }}</div>
+        }
+
+        @for (d of calendarDays; track d.iso) {
+          <button
+            type="button"
+            class="dp-day"
+            [class.dp-day--today]="d.today"
+            [class.dp-day--selected]="d.selected"
+            [class.dp-day--other]="!d.currentMonth"
+            [disabled]="d.disabled"
+            (click)="selectDay(d)"
+          >{{ d.day }}</button>
+        }
+      </div>
+
+      <div class="dp-footer">
+        <button
+          type="button"
+          class="dp-today-btn"
+          [disabled]="!canSelectToday"
+          (click)="goToToday()"
+        >Hoy</button>
+      </div>
+
+    </div>
+  }
+
+</div>

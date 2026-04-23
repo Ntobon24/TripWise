@@ -2,6 +2,11 @@
   padding-bottom: 3rem;
 }
 
+.required-mark {
+  color: #dc2626;
+  margin-left: 2px;
+}
+
 .back {
   display: inline-block;
   margin-bottom: 0.6rem;
@@ -97,39 +102,191 @@
   margin: 0 0 0.75rem;
 }
 
-.budget-summary {
-  border: 1px solid var(--tw-border);
+/* ── Budget card ─────────────────────────────────────────────── */
+.bc {
+  margin-bottom: 1.25rem;
+  padding: 1.1rem 1.1rem 1rem;
+  background: linear-gradient(145deg, rgba(59, 130, 246, 0.06) 0%, rgba(34, 197, 94, 0.04) 100%);
+  border: 1.5px solid rgba(59, 130, 246, 0.2);
   border-radius: var(--tw-radius-sm);
-  background: var(--tw-bg);
-  margin-bottom: 1rem;
-  overflow: hidden;
 }
 
-.budget-row,
-.budget-total-row {
+.bc-head {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.6rem 0.85rem;
-  border-bottom: 1px solid var(--tw-border);
-  font-size: 0.9rem;
+  margin-bottom: 1rem;
 }
 
-.budget-row strong,
-.budget-total-row strong {
+.bc-label {
+  margin: 0 0 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--tw-muted);
+}
+
+.bc-total {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--tw-primary);
   font-variant-numeric: tabular-nums;
 }
 
-.budget-total-row {
-  border-bottom: none;
+.bc-badge {
+  font-size: 0.7rem;
   font-weight: 700;
-  background: rgba(22, 163, 74, 0.08);
-  color: #166534;
+  padding: 0.25rem 0.6rem;
+  border-radius: 99px;
+  flex-shrink: 0;
+  white-space: nowrap;
+
+  &.bc-badge--ok {
+    background: rgba(34, 197, 94, 0.15);
+    color: #15803d;
+  }
+
+  &.bc-badge--over {
+    background: rgba(220, 38, 38, 0.12);
+    color: var(--tw-danger);
+  }
 }
 
-.budget-total-row.over {
-  background: rgba(220, 38, 38, 0.08);
-  color: var(--tw-danger);
+.bc-main {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.bc-donut-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 84px;
+  height: 84px;
+}
+
+.bc-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 2px 6px rgba(59, 130, 246, 0.1));
+}
+
+.bc-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.bc-idle {
+  font-size: 1.1rem;
+  color: var(--tw-muted);
+  font-weight: 300;
+}
+
+.bc-pct {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--tw-text);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+
+  &.bc-pct--over { color: var(--tw-danger); }
+}
+
+.bc-pct-lbl {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tw-muted);
+  margin-top: 2px;
+}
+
+.bc-stats {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.bc-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  &.bc-stat--over .bc-stat-val { color: var(--tw-danger); }
+}
+
+.bc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+
+  &.bc-dot--flight { background: var(--tw-primary); }
+  &.bc-dot--acts   { background: #22c55e; }
+  &.bc-dot--ok     { background: #22c55e; }
+  &.bc-dot--over   { background: var(--tw-danger); }
+}
+
+.bc-stat-body {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.bc-stat-name {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--tw-muted);
+  font-weight: 500;
+}
+
+.bc-stat-val {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--tw-text);
+  font-variant-numeric: tabular-nums;
+
+  &.bc-stat-val--lg {
+    font-size: 0.85rem;
+    color: var(--tw-primary);
+  }
+}
+
+.bc-bar-track {
+  display: flex;
+  margin-top: 0.9rem;
+  height: 5px;
+  border-radius: 99px;
+  background: var(--tw-surface);
+  overflow: hidden;
+  gap: 1px;
+}
+
+.bc-bar-flight {
+  height: 100%;
+  background: var(--tw-primary);
+  border-radius: 99px 0 0 99px;
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 0;
+}
+
+.bc-bar-acts {
+  height: 100%;
+  background: #22c55e;
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 0;
 }
 
 .rec-panel h3 {

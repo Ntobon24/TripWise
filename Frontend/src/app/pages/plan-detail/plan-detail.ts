@@ -13,12 +13,14 @@ import type {
 import { CityTypeaheadComponent } from '../../shared/components/city-typeahead/city-typeahead';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
 import { DecimalPipe } from '@angular/common';
+import { AlertService } from '../../core/services/alert.service';
+import { DatePickerComponent } from '../../shared/components/date-picker/date-picker';
 
 type SelectableActivity = { key: string; value: ActivitySummary };
 
 @Component({
   selector: 'app-plan-detail',
-  imports: [FormsModule, RouterLink, DatePipe, DecimalPipe, CityTypeaheadComponent, MoneyPipe],
+  imports: [FormsModule, RouterLink, DatePipe, DecimalPipe, CityTypeaheadComponent, MoneyPipe, DatePickerComponent],
   templateUrl: './plan-detail.html',
   styleUrl: './plan-detail.scss',
 })
@@ -27,6 +29,7 @@ export class PlanDetail implements OnInit {
   private readonly travelSvc = inject(TravelService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly alert = inject(AlertService);
 
   protected id = '';
   protected plan = signal<TravelPlanSummary | null>(null);
@@ -43,6 +46,29 @@ export class PlanDetail implements OnInit {
   protected returnDate = '';
 
   protected readonly minDate = PlanDetail.isoDateLocal(new Date());
+
+  protected readonly DONUT_R = 38;
+  protected readonly DONUT_C = 2 * Math.PI * 38;
+
+  protected readonly flightPct = computed(() => {
+    if (!this.budgetAmount) return 0;
+    return Math.min(100, (this.selectedFlightCost() / this.budgetAmount) * 100);
+  });
+
+  protected readonly activitiesPct = computed(() => {
+    if (!this.budgetAmount) return 0;
+    const actP = (this.selectedActivitiesCost() / this.budgetAmount) * 100;
+    return Math.max(0, Math.min(actP, 100 - this.flightPct()));
+  });
+
+  protected readonly usedPct = computed(() => {
+    if (!this.budgetAmount) return 0;
+    return Math.min(100, (this.selectedTotalCost() / this.budgetAmount) * 100);
+  });
+
+  protected readonly flightArc = computed(() => (this.flightPct() / 100) * this.DONUT_C);
+  protected readonly activitiesArc = computed(() => (this.activitiesPct() / 100) * this.DONUT_C);
+  protected readonly activitiesRotateDeg = computed(() => -90 + (this.flightPct() / 100) * 360);
 
   protected busy = signal(false);
   protected err = signal('');
@@ -134,6 +160,12 @@ export class PlanDetail implements OnInit {
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+  }
+
+  static addDays(isoDate: string, days: number): string {
+    const d = new Date(isoDate + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    return PlanDetail.isoDateLocal(d);
   }
 
   protected load() {
@@ -301,44 +333,126 @@ export class PlanDetail implements OnInit {
           this.freshRec.set(null);
           this.ok.set('Selecciones guardadas.');
           this.busy.set(false);
+          this.alert.toast('success', 'Selecciones guardadas correctamente');
         },
         error: (e) => {
-          this.err.set(this.msg(e, 'No se pudieron guardar las selecciones.'));
+          const msg = this.msg(e, 'No se pudieron guardar las selecciones.');
+          this.err.set(msg);
           this.busy.set(false);
+          void this.alert.error('Error al guardar selecciones', msg);
         },
       });
   }
 
+  private isValidDateFormat(date: string): boolean {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+    const d = new Date(date + 'T00:00:00');
+    if (isNaN(d.getTime())) return false;
+    const [y, m, day] = date.split('-').map(Number);
+    return d.getFullYear() === y && d.getMonth() + 1 === m && d.getDate() === day;
+  }
+
+  protected onDepartureDateChange(value: string): void {
+    this.departureDate = value;
+    if (!value) return;
+    if (this.returnDate && value > this.returnDate) {
+      this.alert.toast('info', 'La fecha de vuelta se ha limpiado porque quedó antes de la ida.');
+      this.returnDate = '';
+    }
+  }
+
+  protected onReturnDateChange(value: string): void {
+    this.returnDate = value;
+    if (!value || !this.departureDate) return;
+    if (value === this.departureDate) {
+      this.alert.toast('info', 'La ida y la vuelta son el mismo día. Considera ajustar el período.');
+    }
+  }
+
+  protected onBudgetInput(): void {
+    if (this.budgetAmount < 0) {
+      this.budgetAmount = 0;
+    }
+    if (this.budgetAmount > 10_000_000) {
+      this.budgetAmount = 10_000_000;
+      this.alert.toast('warning', 'El presupuesto máximo es 10.000.000.');
+    }
+  }
+
   protected saveChanges() {
     this.formErr.set('');
-    if (!Number.isFinite(this.budgetAmount) || this.budgetAmount < 0.01) {
-      this.formErr.set('El presupuesto debe ser al menos 0,01.');
+    if (!Number.isFinite(this.budgetAmount) || this.budgetAmount < 1) {
+      this.formErr.set('El presupuesto debe ser al menos 1.');
+      return;
+    }
+    if (this.budgetAmount > 10_000_000) {
+      this.formErr.set('El presupuesto no puede superar 10.000.000.');
       return;
     }
     const oc = this.originCityCode.trim().toUpperCase();
     const dc = this.destinationCityCode.trim().toUpperCase();
-    if (!/^[A-Z0-9]{2,8}$/.test(oc) || !/^[A-Z0-9]{2,8}$/.test(dc)) {
-      this.formErr.set('Indica códigos de origen y destino válidos (2–8 caracteres).');
+    if (!oc) {
+      this.formErr.set('Indica la ciudad de origen.');
       return;
     }
-    if (this.departureDate && !/^\d{4}-\d{2}-\d{2}$/.test(this.departureDate)) {
-      this.formErr.set('La fecha de ida no es válida.');
+    if (!/^[A-Z0-9]{2,8}$/.test(oc)) {
+      this.formErr.set('El código de origen solo puede tener letras y números (2–8 caracteres).');
       return;
     }
-    if (this.departureDate && this.departureDate < this.minDate) {
-      this.formErr.set('La fecha de ida no puede ser anterior a hoy.');
+    if (!dc) {
+      this.formErr.set('Indica la ciudad de destino.');
       return;
     }
-    if (this.returnDate && !/^\d{4}-\d{2}-\d{2}$/.test(this.returnDate)) {
-      this.formErr.set('La fecha de vuelta no es válida.');
+    if (!/^[A-Z0-9]{2,8}$/.test(dc)) {
+      this.formErr.set('El código de destino solo puede tener letras y números (2–8 caracteres).');
       return;
     }
-    if (this.departureDate && this.returnDate && this.returnDate < this.departureDate) {
-      this.formErr.set('La vuelta no puede ser anterior a la ida.');
+    if (oc === dc) {
+      this.formErr.set('El origen y el destino no pueden ser la misma ciudad.');
       return;
     }
-    if (this.title.trim().length > 200) {
-      this.formErr.set('El título es demasiado largo.');
+    if (this.departureDate) {
+      if (!this.isValidDateFormat(this.departureDate)) {
+        this.formErr.set('La fecha de ida no es válida. Usa el formato AAAA-MM-DD.');
+        return;
+      }
+      if (this.departureDate < this.minDate) {
+        this.formErr.set('La fecha de ida no puede ser anterior a hoy.');
+        return;
+      }
+    }
+    if (this.returnDate) {
+      if (!this.isValidDateFormat(this.returnDate)) {
+        this.formErr.set('La fecha de vuelta no es válida. Usa el formato AAAA-MM-DD.');
+        return;
+      }
+      if (this.returnDate < this.minDate) {
+        this.formErr.set('La fecha de vuelta no puede ser anterior a hoy.');
+        return;
+      }
+      if (this.departureDate && this.returnDate < this.departureDate) {
+        this.formErr.set('La fecha de vuelta no puede ser anterior a la de ida.');
+        return;
+      }
+      if (this.departureDate) {
+        const maxReturn = PlanDetail.addDays(this.departureDate, 365);
+        if (this.returnDate > maxReturn) {
+          this.formErr.set('El viaje no puede durar más de un año.');
+          return;
+        }
+      }
+    }
+    const title = this.title.trim();
+    if (title.length === 0) {
+      this.formErr.set('El nombre del plan es obligatorio.');
+      return;
+    }
+    if (title.length < 2) {
+      this.formErr.set('El nombre del plan debe tener al menos 2 caracteres.');
+      return;
+    }
+    if (title.length > 200) {
+      this.formErr.set('El nombre del plan no puede superar 200 caracteres.');
       return;
     }
 
@@ -347,7 +461,7 @@ export class PlanDetail implements OnInit {
     this.err.set('');
     this.plansApi
       .update(this.id, {
-        title: this.title.trim(),
+        title,
         budgetAmount: this.budgetAmount,
         originCityCode: oc,
         originCityName: this.originCityName.trim(),
@@ -362,20 +476,39 @@ export class PlanDetail implements OnInit {
           this.flightPage = 0;
           this.ok.set('Cambios guardados.');
           this.busy.set(false);
+          this.alert.toast('success', 'Cambios guardados correctamente');
         },
         error: (e) => {
-          this.err.set(this.msg(e, 'No se pudieron guardar los cambios.'));
+          const msg = this.msg(e, 'No se pudieron guardar los cambios.');
+          this.err.set(msg);
           this.busy.set(false);
+          void this.alert.error('Error al guardar', msg);
         },
       });
   }
 
   protected remove() {
-    if (!globalThis.confirm('¿Eliminar este plan? Esta acción no se puede deshacer.')) return;
-    this.plansApi.delete(this.id).subscribe({
-      next: () => void this.router.navigate(['/planes']),
-      error: (e) => this.err.set(this.msg(e, 'No se pudo eliminar el plan.')),
-    });
+    void this.alert
+      .confirm(
+        '¿Eliminar este plan?',
+        'Esta acción no se puede deshacer. Perderás todos los datos del plan.',
+        'Eliminar',
+        'Cancelar',
+      )
+      .then((confirmed) => {
+        if (!confirmed) return;
+        this.plansApi.delete(this.id).subscribe({
+          next: () => {
+            this.alert.toast('success', 'Plan eliminado');
+            void this.router.navigate(['/planes']);
+          },
+          error: (e) => {
+            const msg = this.msg(e, 'No se pudo eliminar el plan.');
+            this.err.set(msg);
+            void this.alert.error('Error al eliminar', msg);
+          },
+        });
+      });
   }
 
   protected recPayload(): RecommendationsPayload | null {

@@ -9,6 +9,8 @@ import { CityTypeaheadComponent } from '../../shared/components/city-typeahead/c
 import { CurrencyService } from '../../core/services/currency.service';
 import { CurrencySelectorComponent } from '../../shared/components/currency-selector/currency-selector';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import { AlertService } from '../../core/services/alert.service';
+import { DatePickerComponent } from '../../shared/components/date-picker/date-picker';
 
 type SelectableActivity = { key: string; value: ActivitySummary };
 
@@ -22,6 +24,7 @@ type SelectableActivity = { key: string; value: ActivitySummary };
     CityTypeaheadComponent,
     CurrencySelectorComponent,
     MoneyPipe,
+    DatePickerComponent,
   ],
   templateUrl: './plan-form.html',
   styleUrl: './plan-form.scss',
@@ -31,6 +34,7 @@ export class PlanForm {
   private readonly travel = inject(TravelService);
   private readonly router = inject(Router);
   private readonly currencySvc = inject(CurrencyService);
+  private readonly alert = inject(AlertService);
 
   protected readonly STORAGE_CURRENCY = 'USD';
   protected readonly displayCurrency = this.currencySvc.displayCurrency;
@@ -52,11 +56,39 @@ export class PlanForm {
 
   protected readonly minDate = PlanForm.isoDateLocal(new Date());
 
+  protected readonly DONUT_R = 38;
+  protected readonly DONUT_C = 2 * Math.PI * 38;
+
+  protected readonly flightPct = computed(() => {
+    const budget = this.budgetInBaseCurrency();
+    if (!budget) return 0;
+    return Math.min(100, (this.selectedFlightCost() / budget) * 100);
+  });
+
+  protected readonly activitiesPct = computed(() => {
+    const budget = this.budgetInBaseCurrency();
+    if (!budget) return 0;
+    const flightP = this.flightPct();
+    const actP = (this.selectedActivitiesCost() / budget) * 100;
+    return Math.max(0, Math.min(actP, 100 - flightP));
+  });
+
+  protected readonly usedPct = computed(() => {
+    const budget = this.budgetInBaseCurrency();
+    if (!budget) return 0;
+    return Math.min(100, (this.selectedTotalCost() / budget) * 100);
+  });
+
+  protected readonly flightArc = computed(() => (this.flightPct() / 100) * this.DONUT_C);
+  protected readonly activitiesArc = computed(() => (this.activitiesPct() / 100) * this.DONUT_C);
+  protected readonly activitiesRotateDeg = computed(() => -90 + (this.flightPct() / 100) * 360);
+
   protected busy = signal(false);
   protected previewBusy = signal(false);
   protected preview = signal<RecommendationsPayload | null>(null);
   protected err = signal('');
   protected formErr = signal('');
+  protected saveTried = signal(false);
 
   protected selectedFlightId = signal<string | null>(null);
   protected selectedActivityKeys = signal<Set<string>>(new Set());
@@ -147,46 +179,135 @@ export class PlanForm {
     return `${y}-${m}-${day}`;
   }
 
+  protected addDays(isoDate: string, days: number): string {
+    const d = new Date(isoDate + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    return PlanForm.isoDateLocal(d);
+  }
+
+  protected onDepartureDateChange(value: string): void {
+    this.departureDate = value;
+    if (!value) return;
+    if (this.returnDate && value > this.returnDate) {
+      this.alert.toast('info', 'La fecha de vuelta se ha limpiado porque quedó antes de la ida.');
+      this.returnDate = '';
+    }
+  }
+
+  protected onReturnDateChange(value: string): void {
+    this.returnDate = value;
+    if (!value || !this.departureDate) return;
+    if (value === this.departureDate) {
+      this.alert.toast('info', 'La ida y la vuelta son el mismo día. Considera ajustar el período.');
+    }
+  }
+
+  protected onBudgetInput(): void {
+    if (this.budgetAmount < 0) {
+      this.budgetAmount = 0;
+    }
+    if (this.budgetAmount > 10_000_000) {
+      this.budgetAmount = 10_000_000;
+      this.alert.toast('warning', 'El presupuesto máximo es 10.000.000.');
+    }
+  }
+
+  protected isValidCode(code: string): boolean {
+    return /^[A-Z0-9]{2,8}$/.test(code.trim().toUpperCase());
+  }
+
+  private isValidDateFormat(date: string): boolean {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+    const d = new Date(date + 'T00:00:00');
+    if (isNaN(d.getTime())) return false;
+    const [y, m, day] = date.split('-').map(Number);
+    return d.getFullYear() === y && d.getMonth() + 1 === m && d.getDate() === day;
+  }
+
   private validateCore(): boolean {
     this.formErr.set('');
-    if (!Number.isFinite(this.budgetAmount) || this.budgetAmount < 0.01) {
-      this.formErr.set('El presupuesto debe ser al menos 0,01.');
+    const budget = this.budgetAmount;
+    if (!Number.isFinite(budget) || budget < 1) {
+      this.formErr.set('El presupuesto debe ser al menos 1.');
+      return false;
+    }
+    if (budget > 10_000_000) {
+      this.formErr.set('El presupuesto no puede superar 10.000.000.');
       return false;
     }
     const oc = this.originCityCode.trim().toUpperCase();
     const dc = this.destinationCityCode.trim().toUpperCase();
+    if (!oc) {
+      this.formErr.set('Indica la ciudad de origen.');
+      return false;
+    }
     if (!/^[A-Z0-9]{2,8}$/.test(oc)) {
-      this.formErr.set('Indica un código de origen válido (2–8 caracteres).');
+      this.formErr.set('El código de origen solo puede tener letras y números (2–8 caracteres).');
       return false;
     }
-    if (!this.decideForMe && !/^[A-Z0-9]{2,8}$/.test(dc)) {
-      this.formErr.set('Indica un código de destino válido (2–8 caracteres).');
+    if (!this.decideForMe) {
+      if (!dc) {
+        this.formErr.set('Indica la ciudad de destino.');
+        return false;
+      }
+      if (!/^[A-Z0-9]{2,8}$/.test(dc)) {
+        this.formErr.set('El código de destino solo puede tener letras y números (2–8 caracteres).');
+        return false;
+      }
+      if (oc === dc) {
+        this.formErr.set('El origen y el destino no pueden ser la misma ciudad.');
+        return false;
+      }
+    }
+    if (this.departureDate) {
+      if (!this.isValidDateFormat(this.departureDate)) {
+        this.formErr.set('La fecha de ida no es válida. Usa el formato AAAA-MM-DD.');
+        return false;
+      }
+      if (this.departureDate < this.minDate) {
+        this.formErr.set('La fecha de ida no puede ser anterior a hoy.');
+        return false;
+      }
+    }
+    if (this.returnDate) {
+      if (!this.isValidDateFormat(this.returnDate)) {
+        this.formErr.set('La fecha de vuelta no es válida. Usa el formato AAAA-MM-DD.');
+        return false;
+      }
+      if (this.returnDate < this.minDate) {
+        this.formErr.set('La fecha de vuelta no puede ser anterior a hoy.');
+        return false;
+      }
+      if (this.departureDate && this.returnDate < this.departureDate) {
+        this.formErr.set('La fecha de vuelta no puede ser anterior a la de ida.');
+        return false;
+      }
+      if (this.departureDate) {
+        const maxReturn = this.addDays(this.departureDate, 365);
+        if (this.returnDate > maxReturn) {
+          this.formErr.set('El viaje no puede durar más de un año.');
+          return false;
+        }
+      }
+    }
+    const title = this.title.trim();
+    if (!this.decideForMe && title.length === 0) {
+      this.formErr.set('Indica un nombre para el plan.');
       return false;
     }
-    if (this.departureDate && !/^\d{4}-\d{2}-\d{2}$/.test(this.departureDate)) {
-      this.formErr.set('La fecha de ida no es válida.');
+    if (title.length > 0 && title.length < 2) {
+      this.formErr.set('El nombre del plan debe tener al menos 2 caracteres.');
       return false;
     }
-    if (this.departureDate && this.departureDate < this.minDate) {
-      this.formErr.set('La fecha de ida no puede ser anterior a hoy.');
-      return false;
-    }
-    if (this.returnDate && !/^\d{4}-\d{2}-\d{2}$/.test(this.returnDate)) {
-      this.formErr.set('La fecha de vuelta no es válida.');
-      return false;
-    }
-    if (this.departureDate && this.returnDate && this.returnDate < this.departureDate) {
-      this.formErr.set('La vuelta no puede ser anterior a la ida.');
-      return false;
-    }
-    if (this.title.trim().length > 200) {
-      this.formErr.set('El nombre del plan es demasiado largo.');
+    if (title.length > 200) {
+      this.formErr.set('El nombre del plan no puede superar 200 caracteres.');
       return false;
     }
     return true;
   }
 
   protected previewRecommendations() {
+    this.saveTried.set(true);
     if (!this.validateCore()) return;
     this.err.set('');
     this.previewBusy.set(true);
@@ -320,6 +441,7 @@ export class PlanForm {
   }
 
   protected save() {
+    this.saveTried.set(true);
     if (!this.validateCore()) return;
     this.busy.set(true);
     this.err.set('');
@@ -458,15 +580,18 @@ export class PlanForm {
         selectedActivities: this.activitiesForPayload(payload.selectedActivities),
       })
       .subscribe({
-      next: (p) => {
-        this.busy.set(false);
-        void this.router.navigate(['/planes', p.id]);
-      },
-      error: (e) => {
-        this.err.set(this.msg(e));
-        this.busy.set(false);
-      },
-    });
+        next: (p) => {
+          this.busy.set(false);
+          this.alert.toast('success', 'Plan creado correctamente');
+          void this.router.navigate(['/planes', p.id]);
+        },
+        error: (e) => {
+          const msg = this.msg(e);
+          this.err.set(msg);
+          this.busy.set(false);
+          void this.alert.error('No se pudo guardar el plan', msg);
+        },
+      });
   }
 
   private flightForPayload(f: FlightOfferSummary | null): FlightOfferSummary | null {

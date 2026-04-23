@@ -14,30 +14,113 @@
 
   <div class="tw-card form-card">
     <h2 class="section-title">Datos del viaje</h2>
-    <div class="budget-highlight tw-card">
-      <div class="budget-row-top">
-        <p class="budget-label">Presupuesto de este viaje</p>
+    <div class="bc tw-card">
+      <div class="bc-head">
+        <div>
+          <p class="bc-label">Presupuesto del viaje</p>
+          <p class="bc-total">{{ budgetInBaseCurrency() | money : 'USD' }}</p>
+        </div>
         <app-currency-selector [compact]="true" ariaLabel="Cambiar moneda del formulario" />
       </div>
-      <p class="budget-total">{{ budgetInBaseCurrency() | money : 'USD' }}</p>
-      <p class="budget-inline">
-        Seleccionado:
-        <strong>{{ selectedTotalCost() | money : 'USD' }}</strong>
-        · Disponible:
-        <strong [class.budget-negative]="remainingBudget() < 0">
-          {{ remainingBudget() | money : 'USD' }}
-        </strong>
-      </p>
+
+      <div class="bc-main">
+        <div class="bc-donut-wrap">
+          <svg viewBox="0 0 100 100" class="bc-svg" aria-hidden="true">
+            <circle cx="50" cy="50" [attr.r]="DONUT_R" fill="none" stroke="var(--tw-surface)" stroke-width="10"/>
+            @if (activitiesArc() > 0.5) {
+              <circle
+                cx="50" cy="50" [attr.r]="DONUT_R" fill="none" stroke="#22c55e" stroke-width="10"
+                [attr.stroke-dasharray]="activitiesArc() + ' ' + (DONUT_C - activitiesArc())"
+                [attr.transform]="'rotate(' + activitiesRotateDeg() + ' 50 50)'"
+                stroke-linecap="round"
+              />
+            }
+            @if (flightArc() > 0.5) {
+              <circle
+                cx="50" cy="50" [attr.r]="DONUT_R" fill="none"
+                [attr.stroke]="remainingBudget() < 0 ? 'var(--tw-danger)' : 'var(--tw-primary)'"
+                stroke-width="10"
+                [attr.stroke-dasharray]="flightArc() + ' ' + (DONUT_C - flightArc())"
+                transform="rotate(-90 50 50)"
+                stroke-linecap="round"
+              />
+            }
+            @if (usedPct() >= 100) {
+              <circle
+                cx="50" cy="50" [attr.r]="DONUT_R" fill="none" stroke="var(--tw-danger)"
+                stroke-width="10" [attr.stroke-dasharray]="DONUT_C + ' 0'"
+                transform="rotate(-90 50 50)" opacity="0.85"
+              />
+            }
+          </svg>
+          <div class="bc-center">
+            @if (usedPct() === 0) {
+              <span class="bc-idle">—</span>
+            } @else {
+              <span class="bc-pct" [class.bc-pct--over]="usedPct() >= 100">
+                {{ usedPct() | number : '1.0-0' }}%
+              </span>
+              <span class="bc-pct-lbl">usado</span>
+            }
+          </div>
+        </div>
+
+        <div class="bc-stats">
+          <div class="bc-stat">
+            <span class="bc-dot bc-dot--flight"></span>
+            <div class="bc-stat-body">
+              <p class="bc-stat-name">Vuelo</p>
+              <p class="bc-stat-val">{{ selectedFlightCost() | money : 'USD' }}</p>
+            </div>
+          </div>
+          <div class="bc-stat">
+            <span class="bc-dot bc-dot--acts"></span>
+            <div class="bc-stat-body">
+              <p class="bc-stat-name">Actividades</p>
+              <p class="bc-stat-val">{{ selectedActivitiesCost() | money : 'USD' }}</p>
+            </div>
+          </div>
+          <div class="bc-stat" [class.bc-stat--over]="remainingBudget() < 0">
+            <span class="bc-dot" [class.bc-dot--ok]="remainingBudget() >= 0" [class.bc-dot--over]="remainingBudget() < 0"></span>
+            <div class="bc-stat-body">
+              <p class="bc-stat-name">{{ remainingBudget() < 0 ? 'Exceso' : 'Disponible' }}</p>
+              <p class="bc-stat-val bc-stat-val--lg">{{ remainingBudget() | money : 'USD' }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bc-bar-track">
+        <div class="bc-bar-flight" [style.width.%]="flightPct()"></div>
+        <div class="bc-bar-acts" [style.width.%]="activitiesPct()"></div>
+      </div>
     </div>
 
     <div class="form-grid">
       <div class="tw-field span-2">
-        <label for="plan-title">Nombre del plan</label>
-        <input id="plan-title" [(ngModel)]="title" name="title" maxlength="200" [disabled]="decideForMe" />
+        <label for="plan-title">Nombre del plan <span class="required-mark">*</span></label>
+        <input
+          id="plan-title"
+          [(ngModel)]="title"
+          name="title"
+          minlength="2"
+          maxlength="200"
+          [required]="!decideForMe"
+          [disabled]="decideForMe"
+        />
+        @if (saveTried() && !decideForMe && title.trim().length === 0) {
+          <p class="tw-field-error" role="alert">El nombre del plan es obligatorio.</p>
+        }
+        @if (saveTried() && !decideForMe && title.trim().length > 0 && title.trim().length < 2) {
+          <p class="tw-field-error" role="alert">El nombre debe tener al menos 2 caracteres.</p>
+        }
       </div>
       <div class="tw-field">
-        <label for="plan-budget">Presupuesto total (en {{ currencyMeta()?.code ?? 'USD' }})</label>
-        <input id="plan-budget" type="number" [(ngModel)]="budgetAmount" name="budget" min="0.01" step="50" required />
+        <label for="plan-budget">Presupuesto total (en {{ currencyMeta()?.code ?? 'USD' }}) <span class="required-mark">*</span></label>
+        <input id="plan-budget" type="number" [(ngModel)]="budgetAmount" name="budget" min="1" max="10000000" step="50" required (input)="onBudgetInput()" />
+        @if (saveTried() && !(budgetAmount >= 1)) {
+          <p class="tw-field-error" role="alert">Indica un presupuesto válido (mínimo 1).</p>
+        }
         <p class="tw-field-hint">
           Cambia la moneda desde el selector de la barra superior.
         </p>
@@ -61,9 +144,16 @@
             class="code-input"
             [(ngModel)]="originCityCode"
             name="oc"
+            minlength="2"
             maxlength="8"
+            pattern="[A-Za-z0-9]{2,8}"
+            required
             placeholder="BOG"
+            style="text-transform:uppercase"
           />
+          @if (saveTried() && !isValidCode(originCityCode)) {
+            <p class="tw-field-error" role="alert">Código inválido (2–8 letras/números).</p>
+          }
           <p class="tw-field-hint">El buscador lo completa; puedes ajustarlo manualmente.</p>
         </div>
       </div>
@@ -84,9 +174,16 @@
             class="code-input"
             [(ngModel)]="destinationCityCode"
             name="dc"
+            minlength="2"
             maxlength="8"
+            pattern="[A-Za-z0-9]{2,8}"
+            [required]="!decideForMe"
             placeholder="MAD"
+            style="text-transform:uppercase"
           />
+          @if (saveTried() && !decideForMe && !isValidCode(destinationCityCode)) {
+            <p class="tw-field-error" role="alert">Código inválido (2–8 letras/números).</p>
+          }
         </div>
       </div>
     </div>
@@ -101,12 +198,24 @@
 
     <div class="dates-row">
       <div class="tw-field">
-        <label for="plan-dep">Fecha de ida</label>
-        <input id="plan-dep" type="date" [(ngModel)]="departureDate" name="dep" [min]="minDate" [disabled]="decideForMe" />
+        <label>Fecha de ida</label>
+        <app-date-picker
+          [value]="departureDate"
+          (valueChange)="onDepartureDateChange($event)"
+          [min]="minDate"
+          [disabled]="decideForMe"
+          placeholder="Selecciona la fecha de salida"
+        />
       </div>
       <div class="tw-field">
-        <label for="plan-ret">Fecha de vuelta</label>
-        <input id="plan-ret" type="date" [(ngModel)]="returnDate" name="ret" [min]="departureDate || minDate" [disabled]="decideForMe" />
+        <label>Fecha de vuelta</label>
+        <app-date-picker
+          [value]="returnDate"
+          (valueChange)="onReturnDateChange($event)"
+          [min]="departureDate || minDate"
+          [disabled]="decideForMe"
+          placeholder="Selecciona la fecha de regreso"
+        />
       </div>
     </div>
 

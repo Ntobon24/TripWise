@@ -74,7 +74,10 @@
               type="text"
               [(ngModel)]="originCode"
               name="oc"
+              minlength="2"
               maxlength="8"
+              pattern="[A-Za-z0-9]{2,8}"
+              required
               style="text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600"
               placeholder="BOG"
             />
@@ -92,21 +95,29 @@
               type="text"
               [(ngModel)]="destCode"
               name="dc"
+              minlength="2"
               maxlength="8"
+              pattern="[A-Za-z0-9]{2,8}"
+              required
               style="text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600"
               placeholder="MAD"
             />
           </div>
           <div class="tw-field">
             <label for="rec-budget">Presupuesto (en {{ displayMeta()?.code ?? 'USD' }})</label>
-            <input id="rec-budget" type="number" [(ngModel)]="budget" min="0.01" step="50" required />
+            <input id="rec-budget" type="number" [(ngModel)]="budget" min="1" max="10000000" step="50" required (input)="onBudgetInput()" />
             <p class="tw-field-hint">
               Cambia la moneda desde la barra superior. Los precios se muestran convertidos.
             </p>
           </div>
           <div class="tw-field">
-            <label for="rec-date">Fecha de ida (opcional)</label>
-            <input id="rec-date" type="date" [(ngModel)]="departureDate" [min]="minDate" />
+            <label>Fecha de ida (opcional)</label>
+            <app-date-picker
+              [value]="departureDate"
+              (valueChange)="onDepartureDateChange($event)"
+              [min]="minDate"
+              placeholder="Selecciona la fecha de salida"
+            />
           </div>
         </div>
         <button type="button" class="tw-btn btn-search" [disabled]="loadingRec()" (click)="runRecommendations()">

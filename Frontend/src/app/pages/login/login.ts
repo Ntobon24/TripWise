@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { AlertService } from '../../core/services/alert.service';
 
 @Component({
   selector: 'app-login',
@@ -13,6 +14,7 @@ export class Login implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly alert = inject(AlertService);
 
   protected email = '';
   protected password = '';
@@ -44,9 +46,10 @@ export class Login implements OnInit {
         void this.router.navigateByUrl(next);
       },
       error: (e) => {
-        const msg = e?.error?.message ?? e?.message ?? 'Credenciales incorrectas.';
-        this.err.set(String(msg));
+        const msg = String(e?.error?.message ?? e?.message ?? 'Credenciales incorrectas.');
+        this.err.set(msg);
         this.busy.set(false);
+        void this.alert.error('No se pudo iniciar sesión', msg);
       },
     });
   }

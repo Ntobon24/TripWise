@@ -2,6 +2,11 @@
   padding-bottom: 3rem;
 }
 
+.required-mark {
+  color: #dc2626;
+  margin-left: 2px;
+}
+
 .back {
   display: inline-block;
   margin-bottom: 0.85rem;
@@ -27,48 +32,185 @@
   margin-bottom: 1.25rem;
 }
 
-.budget-highlight {
-  margin-bottom: 1rem;
-  border: 2px solid rgba(37, 99, 235, 0.25);
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(16, 185, 129, 0.08));
+/* ── Budget card ─────────────────────────────────────────────── */
+.bc {
+  margin-bottom: 1.25rem;
+  padding: 1.1rem 1.25rem 1rem;
+  background: linear-gradient(145deg, rgba(59, 130, 246, 0.06) 0%, rgba(34, 197, 94, 0.04) 100%);
+  border: 1.5px solid rgba(59, 130, 246, 0.2);
 }
 
-.budget-row-top {
+.bc-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-bottom: 0.15rem;
+  margin-bottom: 1rem;
 }
 
-.act-price .price-label {
-  color: var(--tw-muted);
-  margin-right: 0.25rem;
-}
-
-.budget-label {
-  margin: 0;
-  font-size: 0.8rem;
+.bc-label {
+  margin: 0 0 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.07em;
   color: var(--tw-muted);
 }
 
-.budget-total {
-  margin: 0.35rem 0;
-  font-size: 1.75rem;
+.bc-total {
+  margin: 0;
+  font-size: 1.55rem;
   font-weight: 800;
+  letter-spacing: -0.03em;
   color: var(--tw-primary);
   font-variant-numeric: tabular-nums;
 }
 
-.budget-inline {
-  margin: 0;
-  font-size: 0.95rem;
+/* Donut */
+.bc-main {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
 }
 
-.budget-negative {
-  color: var(--tw-danger);
+.bc-donut-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 92px;
+  height: 92px;
+}
+
+.bc-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 2px 6px rgba(59, 130, 246, 0.1));
+}
+
+.bc-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+.bc-idle {
+  font-size: 1.1rem;
+  color: var(--tw-muted);
+  font-weight: 300;
+}
+
+.bc-pct {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--tw-text);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+
+  &.bc-pct--over {
+    color: var(--tw-danger);
+  }
+}
+
+.bc-pct-lbl {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tw-muted);
+  margin-top: 2px;
+}
+
+/* Stats */
+.bc-stats {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bc-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+
+  &.bc-stat--over .bc-stat-val {
+    color: var(--tw-danger);
+  }
+}
+
+.bc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+
+  &.bc-dot--flight { background: var(--tw-primary); }
+  &.bc-dot--acts   { background: #22c55e; }
+  &.bc-dot--ok     { background: var(--tw-money, #22c55e); }
+  &.bc-dot--over   { background: var(--tw-danger); }
+}
+
+.bc-stat-body {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.bc-stat-name {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--tw-muted);
+  font-weight: 500;
+}
+
+.bc-stat-val {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--tw-text);
+  font-variant-numeric: tabular-nums;
+
+  &.bc-stat-val--lg {
+    font-size: 0.875rem;
+    color: var(--tw-primary);
+  }
+}
+
+/* Progress bar */
+.bc-bar-track {
+  display: flex;
+  margin-top: 1rem;
+  height: 5px;
+  border-radius: 99px;
+  background: var(--tw-surface);
+  overflow: hidden;
+  gap: 1px;
+}
+
+.bc-bar-flight {
+  height: 100%;
+  background: var(--tw-primary);
+  border-radius: 99px 0 0 99px;
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 0;
+}
+
+.bc-bar-acts {
+  height: 100%;
+  background: #22c55e;
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 0;
+}
+
+/* legacy – kept for act-price inside cards */
+.act-price .price-label {
+  color: var(--tw-muted);
+  margin-right: 0.25rem;
 }
 
 .decide-toggle {

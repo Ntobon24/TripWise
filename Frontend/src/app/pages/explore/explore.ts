@@ -8,10 +8,12 @@ import { TravelService } from '../../core/services/travel.service';
 import type { RecommendationsPayload, UnifiedCity } from '../../core/models/api.types';
 import { CurrencyService } from '../../core/services/currency.service';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import { AlertService } from '../../core/services/alert.service';
+import { DatePickerComponent } from '../../shared/components/date-picker/date-picker';
 
 @Component({
   selector: 'app-explore',
-  imports: [FormsModule, RouterLink, DatePipe, CityTypeaheadComponent, MoneyPipe],
+  imports: [FormsModule, RouterLink, DatePipe, CityTypeaheadComponent, MoneyPipe, DatePickerComponent],
   templateUrl: './explore.html',
   styleUrl: './explore.scss',
 })
@@ -19,6 +21,7 @@ export class Explore implements OnInit {
   protected readonly travel = inject(TravelService);
   protected readonly auth = inject(AuthService);
   private readonly currencySvc = inject(CurrencyService);
+  private readonly alert = inject(AlertService);
 
   protected readonly displayCurrency = this.currencySvc.displayCurrency;
   protected readonly displayMeta = computed(
@@ -92,25 +95,53 @@ export class Explore implements OnInit {
     });
   }
 
+  protected onDepartureDateChange(value: string): void {
+    this.departureDate = value;
+  }
+
+  protected onBudgetInput(): void {
+    if (this.budget < 0) this.budget = 0;
+    if (this.budget > 10_000_000) {
+      this.budget = 10_000_000;
+      this.alert.toast('warning', 'El presupuesto máximo es 10.000.000.');
+    }
+  }
+
   protected runRecommendations() {
     this.formErr.set('');
     const budget = Number(this.budget);
-    if (!Number.isFinite(budget) || budget < 0.01) {
-      this.formErr.set('Indica un presupuesto válido (mín. 0,01).');
+    if (!Number.isFinite(budget) || budget < 1) {
+      this.formErr.set('El presupuesto debe ser al menos 1.');
+      return;
+    }
+    if (budget > 10_000_000) {
+      this.formErr.set('El presupuesto no puede superar 10.000.000.');
       return;
     }
     const oc = this.originCode.trim().toUpperCase();
     const dc = this.destCode.trim().toUpperCase();
+    if (!oc) {
+      this.formErr.set('Indica una ciudad de origen.');
+      return;
+    }
     if (!/^[A-Z0-9]{2,8}$/.test(oc)) {
-      this.formErr.set('Indica un código de origen válido (2–8 caracteres).');
+      this.formErr.set('El código de origen solo puede tener letras y números (2–8 caracteres).');
+      return;
+    }
+    if (!dc) {
+      this.formErr.set('Indica una ciudad de destino.');
       return;
     }
     if (!/^[A-Z0-9]{2,8}$/.test(dc)) {
-      this.formErr.set('Indica un código de destino válido (2–8 caracteres).');
+      this.formErr.set('El código de destino solo puede tener letras y números (2–8 caracteres).');
       return;
     }
-    if (this.departureDate && !/^\d{4}-\d{2}-\d{2}$/.test(this.departureDate)) {
-      this.formErr.set('La fecha debe tener formato AAAA-MM-DD.');
+    if (oc === dc) {
+      this.formErr.set('El origen y el destino no pueden ser la misma ciudad.');
+      return;
+    }
+    if (this.departureDate && this.departureDate < this.minDate) {
+      this.formErr.set('La fecha de salida no puede ser anterior a hoy.');
       return;
     }
     this.loadingRec.set(true);
@@ -134,8 +165,10 @@ export class Explore implements OnInit {
           this.loadingRec.set(false);
         },
         error: (e) => {
-          this.err.set(this.humanMessage(e, 'No se pudieron obtener las recomendaciones.'));
+          const msg = this.humanMessage(e, 'No se pudieron obtener las recomendaciones.');
+          this.err.set(msg);
           this.loadingRec.set(false);
+          void this.alert.error('Error al buscar recomendaciones', msg);
         },
       });
   }
