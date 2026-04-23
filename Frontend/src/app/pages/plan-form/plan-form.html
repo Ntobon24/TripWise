@@ -15,14 +15,17 @@
   <div class="tw-card form-card">
     <h2 class="section-title">Datos del viaje</h2>
     <div class="budget-highlight tw-card">
-      <p class="budget-label">Presupuesto de este viaje</p>
-      <p class="budget-total">{{ budgetAmount | number : '1.0-0' }} {{ currency || 'USD' }}</p>
+      <div class="budget-row-top">
+        <p class="budget-label">Presupuesto de este viaje</p>
+        <app-currency-selector [compact]="true" ariaLabel="Cambiar moneda del formulario" />
+      </div>
+      <p class="budget-total">{{ budgetInBaseCurrency() | money : 'USD' }}</p>
       <p class="budget-inline">
         Seleccionado:
-        <strong>{{ selectedTotalCost() | number : '1.0-0' }} {{ currency || 'USD' }}</strong>
+        <strong>{{ selectedTotalCost() | money : 'USD' }}</strong>
         · Disponible:
         <strong [class.budget-negative]="remainingBudget() < 0">
-          {{ remainingBudget() | number : '1.0-0' }} {{ currency || 'USD' }}
+          {{ remainingBudget() | money : 'USD' }}
         </strong>
       </p>
     </div>
@@ -33,20 +36,11 @@
         <input id="plan-title" [(ngModel)]="title" name="title" maxlength="200" [disabled]="decideForMe" />
       </div>
       <div class="tw-field">
-        <label for="plan-budget">Presupuesto total (aprox.)</label>
+        <label for="plan-budget">Presupuesto total (en {{ currencyMeta()?.code ?? 'USD' }})</label>
         <input id="plan-budget" type="number" [(ngModel)]="budgetAmount" name="budget" min="0.01" step="50" required />
-      </div>
-      <div class="tw-field">
-        <label for="plan-currency">Moneda</label>
-        <input
-          id="plan-currency"
-          class="code-input"
-          [(ngModel)]="currency"
-          name="currency"
-          [disabled]="decideForMe"
-          maxlength="8"
-          placeholder="USD"
-        />
+        <p class="tw-field-hint">
+          Cambia la moneda desde el selector de la barra superior.
+        </p>
       </div>
     </div>
 
@@ -173,7 +167,7 @@
               }
             </div>
             <div class="flight-top">
-              <span class="price-tag">{{ f.totalPrice | number : '1.0-0' }} {{ f.currency }}</span>
+              <span class="price-tag">{{ f.totalPrice | money : f.currency }}</span>
               @if (f.withinBudget) {
                 <span class="tw-badge tw-badge--ok">Dentro del presupuesto</span>
               } @else {
@@ -254,8 +248,8 @@
             </p>
             @if (item.value.priceAmount != null) {
               <p class="act-price">
-                Estimado
-                {{ item.value.priceAmount | number : '1.0-0' }} {{ item.value.priceCurrency ?? '' }}
+                <span class="price-label">Estimado</span>
+                {{ item.value.priceAmount | money : (item.value.priceCurrency || 'USD') }}
               </p>
             }
           </article>

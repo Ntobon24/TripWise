@@ -1,12 +1,12 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { PlansService } from '../../core/services/plans.service';
 import type { TravelPlanSummary } from '../../core/models/api.types';
+import { MoneyPipe } from '../../shared/pipes/money.pipe';
 
 @Component({
   selector: 'app-plans-list',
-  imports: [RouterLink, DecimalPipe],
+  imports: [RouterLink, MoneyPipe],
   templateUrl: './plans-list.html',
   styleUrl: './plans-list.scss',
 })

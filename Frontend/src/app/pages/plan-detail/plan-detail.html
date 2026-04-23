@@ -29,8 +29,11 @@
           <input id="edit-title" [(ngModel)]="title" name="title" maxlength="200" />
         </div>
         <div class="tw-field">
-          <label for="edit-budget">Presupuesto</label>
+          <label for="edit-budget">Presupuesto (en {{ p.currency }})</label>
           <input id="edit-budget" type="number" [(ngModel)]="budgetAmount" name="b" min="0.01" step="50" required />
+          <p class="tw-field-hint">
+            Los precios se muestran convertidos a tu moneda seleccionada.
+          </p>
         </div>
 
         <div class="city-group">
@@ -97,19 +100,19 @@
         <div class="budget-summary">
           <div class="budget-row">
             <span>Presupuesto del viaje</span>
-            <strong>{{ budgetAmount | number : '1.0-0' }} {{ p.currency }}</strong>
+            <strong>{{ budgetAmount | money : p.currency }}</strong>
           </div>
           <div class="budget-row">
             <span>Vuelo seleccionado</span>
-            <strong>- {{ selectedFlightCost() | number : '1.0-0' }} {{ p.currency }}</strong>
+            <strong>- {{ selectedFlightCost() | money : (selectedFlight()?.currency || p.currency) }}</strong>
           </div>
           <div class="budget-row">
             <span>Actividades seleccionadas</span>
-            <strong>- {{ selectedActivitiesCost() | number : '1.0-0' }} {{ p.currency }}</strong>
+            <strong>- {{ selectedActivitiesCost() | money : p.currency }}</strong>
           </div>
           <div class="budget-total-row" [class.over]="remainingBudget() < 0">
             <span>{{ remainingBudget() >= 0 ? 'Te sobra' : 'Te excediste' }}</span>
-            <strong>{{ (remainingBudget() >= 0 ? remainingBudget() : -remainingBudget()) | number : '1.0-0' }} {{ p.currency }}</strong>
+            <strong>{{ (remainingBudget() >= 0 ? remainingBudget() : -remainingBudget()) | money : p.currency }}</strong>
           </div>
         </div>
 
@@ -118,7 +121,7 @@
           <div class="flight-list">
             <div class="flight-row" [class.in]="f.withinBudget">
               <div class="flight-row-top">
-                <span class="flight-row-price">{{ f.totalPrice | number : '1.0-0' }} {{ f.currency }}</span>
+                <span class="flight-row-price">{{ f.totalPrice | money : f.currency }}</span>
                 @if (f.withinBudget) {
                   <span class="tw-badge tw-badge--ok">Dentro</span>
                 }
@@ -135,7 +138,7 @@
 
         <h3>Actividades elegidas</h3>
         <ul class="acts">
-          @for (a of selectedActivities(); track a.id) {
+          @for (a of selectedActivities(); track trackActivity($index, a)) {
             <li>
               <span>
                 {{ a.name || 'Actividad seleccionada' }}
@@ -146,7 +149,7 @@
               @if (a.priceAmount != null) {
                 <span class="act-price-inline">
                   {{ a.estimatedPrice ? 'Estimado' : '' }}
-                  {{ a.priceAmount | number : '1.0-0' }} {{ a.priceCurrency || p.currency }}
+                  {{ a.priceAmount | money : (a.priceCurrency || p.currency) }}
                 </span>
               } @else {
                 <span class="tw-muted">Sin precio</span>
@@ -156,7 +159,134 @@
             <li class="tw-muted">No hay actividades guardadas en este plan.</li>
           }
         </ul>
+
+        @if (!editMode()) {
+          <button
+            type="button"
+            class="tw-btn tw-btn--secondary edit-sel-btn"
+            [disabled]="busy()"
+            (click)="openEditSelections()"
+          >
+            Modificar selecciones
+          </button>
+        }
       </section>
     </div>
+
+    @if (editMode()) {
+      <div class="tw-card edit-selections-panel">
+        <div class="edit-sel-header">
+          <h2 class="h2">Modificar vuelo y actividades</h2>
+          <button type="button" class="tw-btn tw-btn--ghost" (click)="cancelEditSelections()">Cancelar</button>
+        </div>
+
+        @if (editErr()) {
+          <p class="tw-error" role="alert">{{ editErr() }}</p>
+        }
+
+        @if (editBusy()) {
+          <p class="tw-muted loading-rec">Buscando opciones…</p>
+        } @else if (!freshRec()) {
+          <p class="tw-muted">No se encontraron recomendaciones para esta ruta.</p>
+          <button type="button" class="tw-btn tw-btn--secondary" (click)="loadFreshRecommendations()">
+            Reintentar
+          </button>
+        } @else {
+          <div class="edit-budget-bar">
+            <span>Presupuesto: <strong>{{ budgetAmount | money : p.currency }}</strong></span>
+            <span>Seleccionado: <strong>{{ (editSelectedFlightCost() + editSelectedActivitiesCost()) | money : p.currency }}</strong></span>
+            <span [class.budget-negative]="editRemainingBudget() < 0">
+              Disponible: <strong>{{ editRemainingBudget() | money : p.currency }}</strong>
+            </span>
+          </div>
+
+          <h3>Vuelos disponibles</h3>
+          @if (!freshRec()!.flights.length) {
+            <p class="tw-muted">Sin vuelos para esta ruta.</p>
+          }
+          <div class="edit-flight-grid">
+            @for (f of editPagedFlights; track f.id) {
+              <article
+                class="tw-card flight-card"
+                [class.sel-active]="isEditFlightSelected(f)"
+                [class.on-budget]="f.withinBudget"
+                role="radio"
+                [attr.aria-checked]="isEditFlightSelected(f)"
+                tabindex="0"
+                (click)="toggleEditFlight(f)"
+                (keydown.enter)="toggleEditFlight(f)"
+                (keydown.space)="$event.preventDefault(); toggleEditFlight(f)"
+              >
+                <div class="sel-check">@if (isEditFlightSelected(f)) { <span class="check-mark">✓</span> }</div>
+                <div class="flight-header">
+                  <span class="flight-price">{{ f.totalPrice | money : f.currency }}</span>
+                  @if (f.withinBudget) {
+                    <span class="tw-badge tw-badge--ok">Dentro del presupuesto</span>
+                  } @else {
+                    <span class="tw-badge tw-badge--warn">Por encima</span>
+                  }
+                </div>
+                <p class="flight-route">{{ f.summary }}</p>
+                @if (f.departureAt) {
+                  <p class="tw-muted flight-date">Sale {{ f.departureAt | date : 'dd MMM yyyy, HH:mm' }}</p>
+                }
+              </article>
+            }
+          </div>
+          @if (editTotalFlightPages > 1) {
+            <div class="flight-pagination">
+              <button type="button" class="tw-btn tw-btn--ghost pag-btn" [disabled]="editFlightPage === 0" (click)="prevEditFlightPage()">← Anterior</button>
+              <span class="pag-info">Página {{ editFlightPage + 1 }} de {{ editTotalFlightPages }}</span>
+              <button type="button" class="tw-btn tw-btn--ghost pag-btn" [disabled]="editFlightPage >= editTotalFlightPages - 1" (click)="nextEditFlightPage()">Siguiente →</button>
+            </div>
+          }
+
+          <h3>Actividades disponibles</h3>
+          <div class="edit-act-grid">
+            @for (item of editPagedActivities; track item.key) {
+              <article
+                class="tw-card act-card"
+                [class.act-selected]="isEditActivitySelected(item.key)"
+                role="checkbox"
+                [attr.aria-checked]="isEditActivitySelected(item.key)"
+                tabindex="0"
+                (click)="toggleEditActivity(item)"
+                (keydown.enter)="toggleEditActivity(item)"
+                (keydown.space)="$event.preventDefault(); toggleEditActivity(item)"
+              >
+                <div class="act-check">@if (isEditActivitySelected(item.key)) { <span class="check-mark">✓</span> }</div>
+                <h4>{{ item.value.name ?? 'Punto de interés' }}</h4>
+                @if (item.value.shortDescription) {
+                  <p class="act-desc tw-muted">{{ item.value.shortDescription }}</p>
+                }
+                <p class="act-meta">
+                  <span class="tw-badge">{{ item.value.category ?? 'Turismo' }}</span>
+                  @if (item.value.popularity != null) {
+                    <span class="tw-muted">Pop. {{ item.value.popularity | number : '1.0-1' }}/7</span>
+                  }
+                </p>
+                @if (item.value.priceAmount != null) {
+                  <p class="act-price">Estimado {{ item.value.priceAmount | money : (item.value.priceCurrency || p.currency) }}</p>
+                }
+              </article>
+            }
+          </div>
+          @if (editTotalActivityPages > 1) {
+            <div class="flight-pagination">
+              <button type="button" class="tw-btn tw-btn--ghost pag-btn" [disabled]="editActivityPage === 0" (click)="prevEditActivityPage()">← Anterior</button>
+              <span class="pag-info">Página {{ editActivityPage + 1 }} de {{ editTotalActivityPages }}</span>
+              <button type="button" class="tw-btn tw-btn--ghost pag-btn" [disabled]="editActivityPage >= editTotalActivityPages - 1" (click)="nextEditActivityPage()">Siguiente →</button>
+            </div>
+          }
+
+          <div class="edit-sel-actions">
+            <button type="button" class="tw-btn" [disabled]="busy()" (click)="saveSelections()">
+              {{ busy() ? 'Guardando…' : 'Guardar selecciones' }}
+            </button>
+            <button type="button" class="tw-btn tw-btn--ghost" (click)="cancelEditSelections()">Cancelar</button>
+          </div>
+        }
+      </div>
+    }
   }
 </div>

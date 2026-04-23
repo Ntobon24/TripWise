@@ -1,8 +1,9 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PlansService } from '../../core/services/plans.service';
+import { TravelService } from '../../core/services/travel.service';
 import type {
   ActivitySummary,
   FlightOfferSummary,
@@ -10,15 +11,20 @@ import type {
   TravelPlanSummary,
 } from '../../core/models/api.types';
 import { CityTypeaheadComponent } from '../../shared/components/city-typeahead/city-typeahead';
+import { MoneyPipe } from '../../shared/pipes/money.pipe';
+import { DecimalPipe } from '@angular/common';
+
+type SelectableActivity = { key: string; value: ActivitySummary };
 
 @Component({
   selector: 'app-plan-detail',
-  imports: [FormsModule, RouterLink, DatePipe, DecimalPipe, CityTypeaheadComponent],
+  imports: [FormsModule, RouterLink, DatePipe, DecimalPipe, CityTypeaheadComponent, MoneyPipe],
   templateUrl: './plan-detail.html',
   styleUrl: './plan-detail.scss',
 })
 export class PlanDetail implements OnInit {
   private readonly plansApi = inject(PlansService);
+  private readonly travelSvc = inject(TravelService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -59,6 +65,65 @@ export class PlanDetail implements OnInit {
   protected prevFlightPage() { if (this.flightPage > 0) this.flightPage--; }
   protected nextFlightPage() { if (this.flightPage < this.totalFlightPages - 1) this.flightPage++; }
 
+  protected readonly editMode = signal(false);
+  protected readonly editBusy = signal(false);
+  protected readonly editErr = signal('');
+  protected readonly freshRec = signal<RecommendationsPayload | null>(null);
+
+  protected readonly editFlightId = signal<string | null>(null);
+  protected readonly editActivityKeys = signal<Set<string>>(new Set());
+  protected readonly editActivitiesMap = signal<Map<string, ActivitySummary>>(new Map());
+
+  protected editFlightPage = 0;
+  protected editActivityPage = 0;
+  private readonly editFlightsPerPage = 4;
+  private readonly editActivitiesPerPage = 8;
+
+  protected get editSelectableActivities(): SelectableActivity[] {
+    return (this.freshRec()?.activities ?? []).map((v, i) => ({
+      key: `${v.id || 'act'}::${v.name || 'sin-nombre'}::${i}`,
+      value: v,
+    }));
+  }
+
+  protected get editPagedFlights(): FlightOfferSummary[] {
+    const all = this.freshRec()?.flights ?? [];
+    const start = this.editFlightPage * this.editFlightsPerPage;
+    return all.slice(start, start + this.editFlightsPerPage);
+  }
+
+  protected get editTotalFlightPages() {
+    return Math.ceil((this.freshRec()?.flights?.length ?? 0) / this.editFlightsPerPage);
+  }
+
+  protected get editPagedActivities(): SelectableActivity[] {
+    const start = this.editActivityPage * this.editActivitiesPerPage;
+    return this.editSelectableActivities.slice(start, start + this.editActivitiesPerPage);
+  }
+
+  protected get editTotalActivityPages() {
+    return Math.ceil(this.editSelectableActivities.length / this.editActivitiesPerPage);
+  }
+
+  protected prevEditFlightPage() { if (this.editFlightPage > 0) this.editFlightPage--; }
+  protected nextEditFlightPage() { if (this.editFlightPage < this.editTotalFlightPages - 1) this.editFlightPage++; }
+  protected prevEditActivityPage() { if (this.editActivityPage > 0) this.editActivityPage--; }
+  protected nextEditActivityPage() { if (this.editActivityPage < this.editTotalActivityPages - 1) this.editActivityPage++; }
+
+  protected readonly editSelectedFlightCost = computed(() => {
+    const id = this.editFlightId();
+    if (!id) return 0;
+    return this.freshRec()?.flights.find((f) => String(f.id) === id)?.totalPrice ?? 0;
+  });
+
+  protected readonly editSelectedActivitiesCost = computed(() =>
+    Array.from(this.editActivitiesMap().values()).reduce((s, a) => s + (a.priceAmount ?? 0), 0),
+  );
+
+  protected readonly editRemainingBudget = computed(
+    () => this.budgetAmount - this.editSelectedFlightCost() - this.editSelectedActivitiesCost(),
+  );
+
   ngOnInit() {
     this.id = this.route.snapshot.paramMap.get('id') ?? '';
     this.load();
@@ -85,9 +150,163 @@ export class PlanDetail implements OnInit {
         this.destinationCityName = p.destinationCityName ?? '';
         this.departureDate = p.departureDate ?? '';
         this.returnDate = p.returnDate ?? '';
+        this.editMode.set(false);
+        this.freshRec.set(null);
       },
       error: (e) => this.err.set(this.msg(e, 'No se encontró el plan.')),
     });
+  }
+
+  protected openEditSelections() {
+    const p = this.plan();
+    if (!p) return;
+    this.editMode.set(true);
+    this.editErr.set('');
+    this.editFlightPage = 0;
+    this.editActivityPage = 0;
+    this.editFlightId.set(null);
+    this.editActivityKeys.set(new Set());
+    this.editActivitiesMap.set(new Map());
+    this.freshRec.set(null);
+    this.loadFreshRecommendations();
+  }
+
+  protected cancelEditSelections() {
+    this.editMode.set(false);
+    this.editErr.set('');
+    this.freshRec.set(null);
+  }
+
+  protected loadFreshRecommendations() {
+    const p = this.plan();
+    if (!p) return;
+    const oc = (p.originCityCode ?? '').trim().toUpperCase();
+    const dc = (p.destinationCityCode ?? '').trim().toUpperCase();
+    if (!/^[A-Z0-9]{2,8}$/.test(oc) || !/^[A-Z0-9]{2,8}$/.test(dc)) {
+      this.editErr.set('Se necesitan códigos de ciudad válidos para buscar recomendaciones.');
+      return;
+    }
+    this.editBusy.set(true);
+    this.editErr.set('');
+    this.freshRec.set(null);
+    this.travelSvc
+      .recommendations({
+        budget: p.budgetAmount,
+        originCityCode: oc,
+        destinationCityCode: dc,
+        originCityName: p.originCityName ?? undefined,
+        destinationCityName: p.destinationCityName ?? undefined,
+        departureDate: p.departureDate ?? undefined,
+      })
+      .subscribe({
+        next: (r) => {
+          this.freshRec.set(r);
+          this.editFlightPage = 0;
+          this.editActivityPage = 0;
+          this.editFlightId.set(null);
+          this.editActivityKeys.set(new Set());
+          this.editActivitiesMap.set(new Map());
+          this.editBusy.set(false);
+        },
+        error: (e) => {
+          this.editErr.set(this.msg(e, 'No se pudieron cargar recomendaciones.'));
+          this.editBusy.set(false);
+        },
+      });
+  }
+
+  protected toggleEditFlight(f: FlightOfferSummary) {
+    const fid = String(f.id);
+    this.editFlightId.update((cur) => (cur === fid ? null : fid));
+  }
+
+  protected isEditFlightSelected(f: FlightOfferSummary): boolean {
+    return this.editFlightId() === String(f.id);
+  }
+
+  protected toggleEditActivity(item: SelectableActivity) {
+    const keys = new Set(this.editActivityKeys());
+    const map = new Map(this.editActivitiesMap());
+    if (keys.has(item.key)) {
+      keys.delete(item.key);
+      map.delete(item.key);
+    } else {
+      keys.add(item.key);
+      map.set(item.key, {
+        id: item.value.id,
+        name: item.value.name ?? null,
+        shortDescription: item.value.shortDescription ?? null,
+        category: item.value.category ?? null,
+        popularity: item.value.popularity ?? null,
+        priceAmount: item.value.priceAmount ?? null,
+        priceCurrency: item.value.priceCurrency ?? null,
+        estimatedPrice: Boolean(item.value.estimatedPrice),
+        withinBudget: item.value.withinBudget ?? null,
+      });
+    }
+    this.editActivityKeys.set(keys);
+    this.editActivitiesMap.set(map);
+  }
+
+  protected isEditActivitySelected(key: string): boolean {
+    return this.editActivityKeys().has(key);
+  }
+
+  protected getEditSelectedFlight(): FlightOfferSummary | null {
+    const id = this.editFlightId();
+    if (!id) return null;
+    return this.freshRec()?.flights.find((f) => String(f.id) === id) ?? null;
+  }
+
+  protected saveSelections() {
+    const flight = this.getEditSelectedFlight();
+    const activities = Array.from(this.editActivitiesMap().values());
+    this.busy.set(true);
+    this.ok.set('');
+    this.err.set('');
+    this.plansApi
+      .update(this.id, {
+        selectedFlight: flight
+          ? {
+              id: String(flight.id),
+              totalPrice: Number(flight.totalPrice),
+              currency: String(flight.currency ?? 'USD'),
+              withinBudget: Boolean(flight.withinBudget),
+              carrierCodes: Array.isArray(flight.carrierCodes) ? flight.carrierCodes.map(String) : [],
+              summary: flight.summary ?? '',
+              departureAt: flight.departureAt ?? null,
+              arrivalAt: flight.arrivalAt ?? null,
+              originAirport: flight.originAirport ?? null,
+              destinationAirport: flight.destinationAirport ?? null,
+              stops: Number(flight.stops ?? 0),
+            }
+          : null,
+        selectedActivities: activities.map((a) => ({
+          id: String(a.id),
+          name: a.name ?? null,
+          shortDescription: a.shortDescription ?? null,
+          category: a.category ?? null,
+          popularity: a.popularity ?? null,
+          priceAmount: a.priceAmount ?? null,
+          priceCurrency: a.priceCurrency ?? null,
+          estimatedPrice: Boolean(a.estimatedPrice),
+          withinBudget: a.withinBudget ?? null,
+        })),
+        lockSelections: true,
+      })
+      .subscribe({
+        next: (p) => {
+          this.plan.set(p);
+          this.editMode.set(false);
+          this.freshRec.set(null);
+          this.ok.set('Selecciones guardadas.');
+          this.busy.set(false);
+        },
+        error: (e) => {
+          this.err.set(this.msg(e, 'No se pudieron guardar las selecciones.'));
+          this.busy.set(false);
+        },
+      });
   }
 
   protected saveChanges() {
@@ -164,29 +383,30 @@ export class PlanDetail implements OnInit {
     if (!r || typeof r !== 'object') return null;
     const flights = (r as RecommendationsPayload).flights;
     if (!Array.isArray(flights)) return null;
-    if (
-      flights.length > 0 &&
-      typeof (flights[0] as { summary?: string }).summary !== 'string'
-    ) {
-      return null;
-    }
     return r as RecommendationsPayload;
   }
 
   protected selectedFlight(): FlightOfferSummary | null {
     const fromPlan = this.plan()?.selectedFlight;
-    if (fromPlan && typeof fromPlan === 'object') {
-      return fromPlan;
+    if (fromPlan && typeof fromPlan === 'object' && !Array.isArray(fromPlan)) {
+      const id = (fromPlan as { id?: unknown }).id;
+      if (id !== undefined && id !== null && String(id).length > 0) {
+        return fromPlan as FlightOfferSummary;
+      }
     }
     return this.recPayload()?.flights?.[0] ?? null;
   }
 
   protected selectedActivities(): ActivitySummary[] {
     const fromPlan = this.plan()?.selectedActivities;
-    if (Array.isArray(fromPlan) && fromPlan.length > 0) {
-      return fromPlan;
+    if (Array.isArray(fromPlan)) {
+      return fromPlan as ActivitySummary[];
     }
     return this.recPayload()?.activities ?? [];
+  }
+
+  protected trackActivity(index: number, a: ActivitySummary): string {
+    return `${a.id ?? 'act'}-${index}`;
   }
 
   protected selectedFlightCost(): number {

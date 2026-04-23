@@ -1,17 +1,28 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { PlansService } from '../../core/services/plans.service';
 import { TravelService } from '../../core/services/travel.service';
 import type { ActivitySummary, FlightOfferSummary, RecommendationsPayload } from '../../core/models/api.types';
 import { CityTypeaheadComponent } from '../../shared/components/city-typeahead/city-typeahead';
+import { CurrencyService } from '../../core/services/currency.service';
+import { CurrencySelectorComponent } from '../../shared/components/currency-selector/currency-selector';
+import { MoneyPipe } from '../../shared/pipes/money.pipe';
 
 type SelectableActivity = { key: string; value: ActivitySummary };
 
 @Component({
   selector: 'app-plan-form',
-  imports: [FormsModule, RouterLink, DatePipe, DecimalPipe, CityTypeaheadComponent],
+  imports: [
+    FormsModule,
+    RouterLink,
+    DatePipe,
+    DecimalPipe,
+    CityTypeaheadComponent,
+    CurrencySelectorComponent,
+    MoneyPipe,
+  ],
   templateUrl: './plan-form.html',
   styleUrl: './plan-form.scss',
 })
@@ -19,10 +30,16 @@ export class PlanForm {
   private readonly plansApi = inject(PlansService);
   private readonly travel = inject(TravelService);
   private readonly router = inject(Router);
+  private readonly currencySvc = inject(CurrencyService);
+
+  protected readonly STORAGE_CURRENCY = 'USD';
+  protected readonly displayCurrency = this.currencySvc.displayCurrency;
+  protected readonly currencyMeta = computed(
+    () => this.currencySvc.currencyMeta(this.displayCurrency()),
+  );
 
   protected title = 'Mi viaje';
   protected budgetAmount = 1200;
-  protected currency = 'USD';
 
   protected originCityCode = 'BOG';
   protected originCityName = 'Bogotá';
@@ -180,7 +197,7 @@ export class PlanForm {
     this.flightPage = 0;
     this.activityPage = 0;
     this.activityCategoryFilter = 'Todos';
-    const budget = this.budgetAmount;
+    const budget = this.toStoredBudget(this.budgetAmount);
     const originCityCode = this.originCityCode.trim().toUpperCase();
     const originCityName = this.originCityName.trim() || undefined;
     const destinationCityCode = this.destinationCityCode.trim().toUpperCase();
@@ -210,7 +227,7 @@ export class PlanForm {
             this.title = this.buildAutoTitle(r.destination.name ?? r.destination.code, r.departureDate);
             const firstFlight = r.flights[0];
             if (firstFlight) {
-              this.selectedFlightId.set(firstFlight.id);
+              this.selectedFlightId.set(String(firstFlight.id));
             }
             const autoActs = new Map<string, ActivitySummary>();
             this.selectableActivities.slice(0, 4).forEach((a) => {
@@ -229,10 +246,11 @@ export class PlanForm {
   }
 
   protected toggleFlight(f: FlightOfferSummary) {
-    if (this.selectedFlightId() === f.id) {
+    const fid = String(f.id);
+    if (this.selectedFlightId() === fid) {
       this.selectedFlightId.set(null);
     } else {
-      this.selectedFlightId.set(f.id);
+      this.selectedFlightId.set(fid);
       if (f.departureAt) {
         const d = new Date(f.departureAt);
         if (!isNaN(d.getTime())) {
@@ -278,7 +296,7 @@ export class PlanForm {
   protected selectedFlight(): FlightOfferSummary | null {
     const id = this.selectedFlightId();
     if (!id) return null;
-    return this.preview()?.flights.find((f) => f.id === id) ?? null;
+    return this.preview()?.flights.find((f) => String(f.id) === id) ?? null;
   }
 
   protected selectedActivities(): ActivitySummary[] {
@@ -298,7 +316,7 @@ export class PlanForm {
   }
 
   protected remainingBudget(): number {
-    return this.budgetAmount - this.selectedTotalCost();
+    return this.budgetInBaseCurrency() - this.selectedTotalCost();
   }
 
   protected save() {
@@ -311,8 +329,8 @@ export class PlanForm {
     }
     this.createPlan({
       title: this.title.trim() || 'Mi viaje',
-      budgetAmount: this.budgetAmount,
-      currency: this.currency.trim().toUpperCase() || 'USD',
+      budgetAmount: this.toStoredBudget(this.budgetAmount),
+      currency: this.STORAGE_CURRENCY,
       originCityCode: this.originCityCode.trim().toUpperCase(),
       originCityName: this.originCityName.trim(),
       destinationCityCode: this.destinationCityCode.trim().toUpperCase(),
@@ -325,11 +343,27 @@ export class PlanForm {
     });
   }
 
+  private toStoredBudget(amount: number): number {
+    const converted = this.currencySvc.convert(
+      amount,
+      this.displayCurrency(),
+      this.STORAGE_CURRENCY,
+    );
+    if (converted === null || !Number.isFinite(converted)) {
+      return amount;
+    }
+    return Math.round(converted * 100) / 100;
+  }
+
+  protected budgetInBaseCurrency(): number {
+    return this.toStoredBudget(this.budgetAmount);
+  }
+
   private saveWithAutoPlan() {
-    const budget = this.budgetAmount;
+    const budgetUsd = this.toStoredBudget(this.budgetAmount);
     this.travel
       .autoPlan({
-        budget,
+        budget: budgetUsd,
         originCityCode: this.originCityCode.trim().toUpperCase(),
         originCityName: this.originCityName.trim() || undefined,
       })
@@ -343,7 +377,7 @@ export class PlanForm {
           }
 
           const flightCost = selectedFlight.totalPrice ?? 0;
-          const remaining = Math.max(0, budget - flightCost);
+          const remaining = Math.max(0, budgetUsd - flightCost);
           const selectedActivities = this.pickActivitiesForAuto(rec.activities ?? [], remaining);
 
           this.destinationCityCode = rec.destination.code;
@@ -353,8 +387,8 @@ export class PlanForm {
 
           this.createPlan({
             title: this.title,
-            budgetAmount: budget,
-            currency: this.currency.trim().toUpperCase() || 'USD',
+            budgetAmount: budgetUsd,
+            currency: this.STORAGE_CURRENCY,
             originCityCode: this.originCityCode.trim().toUpperCase(),
             originCityName: this.originCityName.trim(),
             destinationCityCode: rec.destination.code,
@@ -417,7 +451,13 @@ export class PlanForm {
     selectedActivities: ActivitySummary[];
     lockSelections: boolean;
   }) {
-    this.plansApi.create(payload).subscribe({
+    this.plansApi
+      .create({
+        ...payload,
+        selectedFlight: this.flightForPayload(payload.selectedFlight),
+        selectedActivities: this.activitiesForPayload(payload.selectedActivities),
+      })
+      .subscribe({
       next: (p) => {
         this.busy.set(false);
         void this.router.navigate(['/planes', p.id]);
@@ -427,6 +467,37 @@ export class PlanForm {
         this.busy.set(false);
       },
     });
+  }
+
+  private flightForPayload(f: FlightOfferSummary | null): FlightOfferSummary | null {
+    if (!f) return null;
+    return {
+      id: String(f.id),
+      totalPrice: Number(f.totalPrice),
+      currency: String(f.currency ?? 'USD'),
+      withinBudget: Boolean(f.withinBudget),
+      carrierCodes: Array.isArray(f.carrierCodes) ? f.carrierCodes.map(String) : [],
+      summary: f.summary ?? '',
+      departureAt: f.departureAt ?? null,
+      arrivalAt: f.arrivalAt ?? null,
+      originAirport: f.originAirport ?? null,
+      destinationAirport: f.destinationAirport ?? null,
+      stops: Number(f.stops ?? 0),
+    };
+  }
+
+  private activitiesForPayload(list: ActivitySummary[]): ActivitySummary[] {
+    return list.map((a) => ({
+      id: String(a.id),
+      name: a.name ?? null,
+      shortDescription: a.shortDescription ?? null,
+      category: a.category ?? null,
+      popularity: a.popularity ?? null,
+      priceAmount: a.priceAmount ?? null,
+      priceCurrency: a.priceCurrency ?? null,
+      estimatedPrice: Boolean(a.estimatedPrice),
+      withinBudget: a.withinBudget ?? null,
+    }));
   }
 
   private buildAutoTitle(destination: string, departureDate?: string | null): string {

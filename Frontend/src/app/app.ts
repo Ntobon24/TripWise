@@ -4,10 +4,11 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { fromEvent } from 'rxjs';
 import { SESSION_ENDED_EVENT } from './core/session/token.storage';
 import { AuthService } from './core/services/auth.service';
+import { CurrencySelectorComponent } from './shared/components/currency-selector/currency-selector';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CurrencySelectorComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })

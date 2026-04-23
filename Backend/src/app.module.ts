@@ -12,6 +12,7 @@ import { PlansModule } from './plans/plans.module';
 import { TravelModule } from './travel/travel.module';
 import { ExploreModule } from './explore/explore.module';
 import { SupabaseModule } from './supabase/supabase.module';
+import { CurrencyModule } from './currency/currency.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { SupabaseModule } from './supabase/supabase.module';
     ExploreModule,
     AuthModule,
     PlansModule,
+    CurrencyModule,
   ],
   controllers: [AppController],
   providers: [AppService, SchemaBootstrapService],

@@ -1,0 +1,84 @@
+<div class="cs-root" [class.is-compact]="compact">
+  <button
+    type="button"
+    class="cs-trigger"
+    [class.is-open]="open()"
+    [attr.aria-haspopup]="'listbox'"
+    [attr.aria-expanded]="open()"
+    [attr.aria-label]="ariaLabel"
+    (click)="toggle()"
+  >
+    <span class="cs-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"></circle>
+        <path d="M3 12h18"></path>
+        <path d="M12 3a14 14 0 0 1 0 18"></path>
+        <path d="M12 3a14 14 0 0 0 0 18"></path>
+      </svg>
+    </span>
+    @if (active().flag) {
+      <span class="cs-flag" aria-hidden="true">{{ active().flag }}</span>
+    }
+    <span class="cs-code">{{ active().code }}</span>
+    @if (loading()) {
+      <span class="cs-spinner" aria-hidden="true"></span>
+    } @else {
+      <span class="cs-caret" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </span>
+    }
+  </button>
+
+  @if (open()) {
+    <div class="cs-panel" role="listbox" [attr.aria-label]="ariaLabel">
+      <div class="cs-header">
+        <span class="cs-header-title">Moneda de visualización</span>
+        @if (lastUpdated()) {
+          <span class="cs-header-meta">Tasas: {{ formattedUpdate() }}</span>
+        } @else if (loading()) {
+          <span class="cs-header-meta">Cargando tasas…</span>
+        }
+      </div>
+
+      @if (errorMsg()) {
+        <div class="cs-error">
+          <span>{{ errorMsg() }}</span>
+          <button type="button" class="cs-retry" (click)="retry($event)">Reintentar</button>
+        </div>
+      }
+
+      <ul class="cs-list">
+        @for (c of supported; track c.code) {
+          <li>
+            <button
+              type="button"
+              class="cs-option"
+              role="option"
+              [attr.aria-selected]="isActive(c.code)"
+              [class.is-active]="isActive(c.code)"
+              (click)="select(c.code)"
+            >
+              <span class="cs-option-flag" aria-hidden="true">{{ c.flag }}</span>
+              <span class="cs-option-main">
+                <span class="cs-option-code">{{ c.code }}</span>
+                <span class="cs-option-name">{{ c.name }}</span>
+              </span>
+              <span class="cs-option-symbol" aria-hidden="true">{{ c.symbol }}</span>
+              @if (isActive(c.code)) {
+                <span class="cs-option-check" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </span>
+              }
+            </button>
+          </li>
+        }
+      </ul>
+
+      <p class="cs-note">Los importes se muestran en la moneda elegida.</p>
+    </div>
+  }
+</div>

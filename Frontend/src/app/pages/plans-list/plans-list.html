@@ -30,12 +30,10 @@
         <a [routerLink]="['/planes', p.id]" class="tw-card plan-card">
           <div class="plan-top">
             <h2>{{ p.title }}</h2>
-            <span class="tw-badge">{{ p.currency }}</span>
+            <span class="tw-badge" title="Moneda almacenada">{{ p.currency }}</span>
           </div>
-          <p class="budget">{{ p.budgetAmount | number : '1.0-0' }} {{ p.currency }}</p>
-          <p class="tw-muted route">
-            {{ p.originCityCode || '?' }} → {{ p.destinationCityCode || '?' }}
-          </p>
+          <p class="budget">{{ p.budgetAmount | money : p.currency }}</p>
+          <p class="tw-muted route">{{ p.originCityCode || '?' }} → {{ p.destinationCityCode || '?' }}</p>
           @if (p.originCityName || p.destinationCityName) {
             <p class="names tw-muted">
               {{ p.originCityName }} @if (p.destinationCityName) {

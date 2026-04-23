@@ -11,6 +11,7 @@
         }
       </nav>
       <div class="auth">
+        <app-currency-selector />
         @if (authSvc.user(); as u) {
           <div class="user-chip">
             <span class="user-avatar" aria-hidden="true">{{ u.name ? u.name[0] : '?' }}</span>

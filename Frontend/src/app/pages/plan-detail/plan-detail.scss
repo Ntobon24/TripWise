@@ -246,3 +246,166 @@
   white-space: nowrap;
   font-size: 0.85rem;
 }
+
+.edit-sel-btn {
+  margin-top: 1.25rem;
+  width: 100%;
+}
+
+.edit-selections-panel {
+  margin-top: 1.5rem;
+  padding: 1.5rem 1.75rem;
+  background: var(--tw-bg);
+}
+
+.edit-sel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.edit-budget-bar {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  background: var(--tw-surface);
+  border: 1px solid var(--tw-border);
+  border-radius: var(--tw-radius-sm);
+  padding: 0.65rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.edit-flight-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.edit-act-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.flight-card,
+.act-card {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-left: 2.5rem;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.flight-card:hover,
+.act-card:hover {
+  border-color: var(--tw-primary);
+}
+
+.flight-card.sel-active,
+.act-card.act-selected {
+  border-color: var(--tw-primary);
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.flight-card.on-budget {
+  border-left: 3px solid var(--tw-money);
+}
+
+.sel-check,
+.act-check {
+  position: absolute;
+  left: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  border: 2px solid var(--tw-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+}
+
+.flight-card.sel-active .sel-check,
+.act-card.act-selected .act-check {
+  border-color: var(--tw-primary);
+  background: var(--tw-primary);
+  color: #fff;
+}
+
+.flight-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.3rem;
+}
+
+.flight-price {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--tw-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.flight-route {
+  margin: 0 0 0.2rem;
+  font-size: 0.875rem;
+}
+
+.flight-date {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.act-card h4 {
+  margin: 0 0 0.3rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.act-desc {
+  font-size: 0.82rem;
+  margin: 0 0 0.35rem;
+}
+
+.act-meta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.act-price {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--tw-money);
+  margin: 0;
+}
+
+.edit-sel-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--tw-border);
+}
+
+.loading-rec {
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+.budget-negative strong {
+  color: var(--tw-danger);
+}

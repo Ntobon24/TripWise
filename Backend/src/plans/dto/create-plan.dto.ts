@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  Allow,
   IsArray,
   IsBoolean,
   IsNumber,
@@ -65,11 +66,14 @@ export class CreateTravelPlanDto {
   @IsBoolean()
   lockSelections?: boolean;
 
+  @Allow()
   @IsOptional()
   @IsObject()
   selectedFlight?: Record<string, unknown> | null;
 
+  @Allow()
   @IsOptional()
   @IsArray()
-  selectedActivities?: unknown[];
+  @Type(() => Object)
+  selectedActivities?: Record<string, unknown>[];
 }

@@ -1,21 +1,29 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { CityTypeaheadComponent } from '../../shared/components/city-typeahead/city-typeahead';
 import { AuthService } from '../../core/services/auth.service';
 import { TravelService } from '../../core/services/travel.service';
 import type { RecommendationsPayload, UnifiedCity } from '../../core/models/api.types';
+import { CurrencyService } from '../../core/services/currency.service';
+import { MoneyPipe } from '../../shared/pipes/money.pipe';
 
 @Component({
   selector: 'app-explore',
-  imports: [FormsModule, RouterLink, DatePipe, DecimalPipe, CityTypeaheadComponent],
+  imports: [FormsModule, RouterLink, DatePipe, CityTypeaheadComponent, MoneyPipe],
   templateUrl: './explore.html',
   styleUrl: './explore.scss',
 })
 export class Explore implements OnInit {
   protected readonly travel = inject(TravelService);
   protected readonly auth = inject(AuthService);
+  private readonly currencySvc = inject(CurrencyService);
+
+  protected readonly displayCurrency = this.currencySvc.displayCurrency;
+  protected readonly displayMeta = computed(
+    () => this.currencySvc.currencyMeta(this.displayCurrency()),
+  );
 
   protected destinations = signal<UnifiedCity[]>([]);
   protected searchQ = 'Madrid';
@@ -109,9 +117,11 @@ export class Explore implements OnInit {
     this.err.set('');
     this.rec.set(null);
     this.flightPage = 0;
+    const budgetUsd =
+      this.currencySvc.convert(budget, this.displayCurrency(), 'USD') ?? budget;
     this.travel
       .recommendations({
-        budget,
+        budget: Math.round(budgetUsd * 100) / 100,
         originCityCode: oc,
         destinationCityCode: dc,
         originCityName: this.originName.trim() || undefined,

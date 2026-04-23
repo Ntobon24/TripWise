@@ -98,8 +98,11 @@
             />
           </div>
           <div class="tw-field">
-            <label for="rec-budget">Presupuesto (USD)</label>
+            <label for="rec-budget">Presupuesto (en {{ displayMeta()?.code ?? 'USD' }})</label>
             <input id="rec-budget" type="number" [(ngModel)]="budget" min="0.01" step="50" required />
+            <p class="tw-field-hint">
+              Cambia la moneda desde la barra superior. Los precios se muestran convertidos.
+            </p>
           </div>
           <div class="tw-field">
             <label for="rec-date">Fecha de ida (opcional)</label>
@@ -137,7 +140,7 @@
             @for (f of pagedFlights; track f.id) {
               <article class="tw-card flight-card" [class.on-budget]="f.withinBudget">
                 <div class="flight-header">
-                  <span class="flight-price">{{ f.totalPrice | number : '1.0-0' }} {{ f.currency }}</span>
+                  <span class="flight-price">{{ f.totalPrice | money : f.currency }}</span>
                   @if (f.withinBudget) {
                     <span class="tw-badge tw-badge--ok">Dentro del presupuesto</span>
                   } @else {
@@ -178,9 +181,7 @@
                   <p class="tw-muted act-desc">{{ a.shortDescription }}</p>
                 }
                 @if (a.priceAmount != null) {
-                  <p class="act-price">
-                    Estimado {{ a.priceAmount | number : '1.0-0' }} {{ a.priceCurrency ?? '' }}
-                  </p>
+                  <p class="act-price">Estimado {{ a.priceAmount | money : (a.priceCurrency || 'USD') }}</p>
                 }
               </article>
             } @empty {
@@ -207,3 +208,4 @@
     }
   </div>
 </div>
+
