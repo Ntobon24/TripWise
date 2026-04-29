@@ -43,6 +43,7 @@
             placeholder="Busca la ciudad de origen…"
             [(cityName)]="originCityName"
             [(cityCode)]="originCityCode"
+            (cityPicked)="onOriginPicked()"
           />
           <div class="tw-field">
             <label for="edit-oc">Código IATA / país</label>
@@ -58,6 +59,7 @@
               required
               placeholder="BOG"
               style="text-transform:uppercase"
+              (blur)="onOriginPicked()"
             />
           </div>
         </div>
@@ -69,6 +71,7 @@
             placeholder="Busca la ciudad de destino…"
             [(cityName)]="destinationCityName"
             [(cityCode)]="destinationCityCode"
+            (cityPicked)="onDestinationPicked()"
           />
           <div class="tw-field">
             <label for="edit-dc">Código IATA / país</label>
@@ -84,6 +87,7 @@
               required
               placeholder="MAD"
               style="text-transform:uppercase"
+              (blur)="onDestinationPicked()"
             />
           </div>
         </div>

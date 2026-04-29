@@ -42,6 +42,13 @@ export class PlanDetail implements OnInit {
   protected destinationCityCode = '';
   protected destinationCityName = '';
 
+  private originalOriginCode = '';
+  private originalOriginName = '';
+  private originalOriginDisplay = '';
+  private originalDestCode = '';
+  private originalDestName = '';
+  private originalDestDisplay = '';
+
   protected departureDate = '';
   protected returnDate = '';
 
@@ -150,6 +157,10 @@ export class PlanDetail implements OnInit {
     () => this.budgetAmount - this.editSelectedFlightCost() - this.editSelectedActivitiesCost(),
   );
 
+  static normalizeCityLabel(name: string): string {
+    return name.trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
   ngOnInit() {
     this.id = this.route.snapshot.paramMap.get('id') ?? '';
     this.load();
@@ -180,6 +191,12 @@ export class PlanDetail implements OnInit {
         this.originCityName = p.originCityName ?? '';
         this.destinationCityCode = p.destinationCityCode ?? '';
         this.destinationCityName = p.destinationCityName ?? '';
+        this.originalOriginCode = (p.originCityCode ?? '').trim().toUpperCase();
+        this.originalOriginName = PlanDetail.normalizeCityLabel(p.originCityName ?? '');
+        this.originalOriginDisplay = (p.originCityName ?? '').trim();
+        this.originalDestCode = (p.destinationCityCode ?? '').trim().toUpperCase();
+        this.originalDestName = PlanDetail.normalizeCityLabel(p.destinationCityName ?? '');
+        this.originalDestDisplay = (p.destinationCityName ?? '').trim();
         this.departureDate = p.departureDate ?? '';
         this.returnDate = p.returnDate ?? '';
         this.editMode.set(false);
@@ -379,6 +396,42 @@ export class PlanDetail implements OnInit {
     }
   }
 
+  protected onOriginPicked(): void {
+    this.checkSameCityConflict('origen');
+  }
+
+  protected onDestinationPicked(): void {
+    this.checkSameCityConflict('destino');
+  }
+
+  private checkSameCityConflict(picked: 'origen' | 'destino'): void {
+    setTimeout(() => {
+      const oc = (this.originCityCode || '').trim().toUpperCase();
+      const dc = (this.destinationCityCode || '').trim().toUpperCase();
+      if (!oc || !dc || oc !== dc) return;
+      const on = PlanDetail.normalizeCityLabel(this.originCityName || '');
+      const dn = PlanDetail.normalizeCityLabel(this.destinationCityName || '');
+      if (on && dn && on !== dn) return;
+
+      this.alert.toast('warning', `Origen y destino tienen el mismo código (${oc}). Ajústalo manualmente si son ciudades distintas.`);
+      void this.alert.warning(
+        'Códigos en conflicto',
+        `El código IATA de ${picked} (${oc}) coincide con el de la otra ciudad. ` +
+          'Esto suele ocurrir cuando ambas ciudades comparten país y aún no se ha detectado el código de aeropuerto. ' +
+          'Ajusta manualmente el código IATA del aeropuerto correspondiente (ej. BOG para Bogotá, MDE para Medellín).',
+      );
+    }, 50);
+  }
+
+  private hasStoredSelections(): boolean {
+    const p = this.plan();
+    if (!p) return false;
+    const f = p.selectedFlight;
+    const hasFlight = !!(f && typeof f === 'object' && (f as { id?: unknown }).id);
+    const acts = Array.isArray(p.selectedActivities) ? p.selectedActivities : [];
+    return hasFlight || acts.length > 0;
+  }
+
   protected saveChanges() {
     this.formErr.set('');
     if (!Number.isFinite(this.budgetAmount) || this.budgetAmount < 1) {
@@ -408,8 +461,21 @@ export class PlanDetail implements OnInit {
       return;
     }
     if (oc === dc) {
-      this.formErr.set('El origen y el destino no pueden ser la misma ciudad.');
-      return;
+      const on = PlanDetail.normalizeCityLabel(this.originCityName);
+      const dn = PlanDetail.normalizeCityLabel(this.destinationCityName);
+      if (on === dn && on.length >= 2) {
+        this.formErr.set('El origen y el destino no pueden ser la misma ciudad.');
+        void this.alert.warning(
+          'Ciudad duplicada',
+          `Origen y destino coinciden (${this.originCityName || oc}).`,
+        );
+        return;
+      }
+      void this.alert.warning(
+        'Mismo código de país o región',
+        `Origen y destino comparten el código ${oc}, pero las ciudades son distintas (${this.originCityName || '?'} → ${this.destinationCityName || '?'}). ` +
+          'Para buscar vuelos fiables, indica el código IATA de cada aeropuerto (ej. BCN y MAD).',
+      );
     }
     if (this.departureDate) {
       if (!this.isValidDateFormat(this.departureDate)) {
@@ -456,27 +522,88 @@ export class PlanDetail implements OnInit {
       return;
     }
 
+    const normOrig = PlanDetail.normalizeCityLabel(this.originCityName);
+    const normDest = PlanDetail.normalizeCityLabel(this.destinationCityName);
+
+    const routeChanged =
+      this.originalOriginCode !== oc ||
+      this.originalDestCode !== dc ||
+      this.originalOriginName !== normOrig ||
+      this.originalDestName !== normDest;
+
+    const proceed = () => this.persistChanges(title, oc, dc, routeChanged);
+
+    if (routeChanged) {
+      const hasSelections = this.hasStoredSelections();
+      const parts: string[] = [];
+      if (this.originalOriginCode !== oc || this.originalOriginName !== normOrig) {
+        parts.push(
+          `Origen: "${this.originalOriginDisplay || '(sin nombre)'}" → "${this.originCityName.trim() || '(sin nombre)'}" (código ${this.originalOriginCode || '—'} → ${oc})`,
+        );
+      }
+      if (this.originalDestCode !== dc || this.originalDestName !== normDest) {
+        parts.push(
+          `Destino: "${this.originalDestDisplay || '(sin nombre)'}" → "${this.destinationCityName.trim() || '(sin nombre)'}" (código ${this.originalDestCode || '—'} → ${dc})`,
+        );
+      }
+      const detail = parts.join('. ');
+      const message = hasSelections
+        ? `${detail}. Se eliminarán el vuelo y las actividades guardadas porque ya no aplican a la nueva ruta.`
+        : `${detail}. Las recomendaciones de vuelos y actividades del viaje anterior se eliminarán.`;
+
+      void this.alert
+        .confirm(
+          '¿Cambiar la ruta del plan?',
+          message,
+          'Sí, actualizar ruta',
+          'Cancelar',
+        )
+        .then((ok) => {
+          if (ok) proceed();
+        });
+      return;
+    }
+
+    proceed();
+  }
+
+  private persistChanges(title: string, oc: string, dc: string, routeChanged: boolean): void {
     this.busy.set(true);
     this.ok.set('');
     this.err.set('');
+    const updatePayload: Record<string, unknown> = {
+      title,
+      budgetAmount: this.budgetAmount,
+      originCityCode: oc,
+      originCityName: this.originCityName.trim(),
+      destinationCityCode: dc,
+      destinationCityName: this.destinationCityName.trim(),
+      departureDate: this.departureDate.trim() || undefined,
+      returnDate: this.returnDate.trim() || undefined,
+    };
+    if (routeChanged) {
+      updatePayload['selectedFlight'] = null;
+      updatePayload['selectedActivities'] = [];
+      updatePayload['lockSelections'] = false;
+    }
     this.plansApi
-      .update(this.id, {
-        title,
-        budgetAmount: this.budgetAmount,
-        originCityCode: oc,
-        originCityName: this.originCityName.trim(),
-        destinationCityCode: dc,
-        destinationCityName: this.destinationCityName.trim(),
-        departureDate: this.departureDate.trim() || undefined,
-        returnDate: this.returnDate.trim() || undefined,
-      })
+      .update(this.id, updatePayload as Parameters<typeof this.plansApi.update>[1])
       .subscribe({
         next: (p) => {
           this.plan.set(p);
+          this.originalOriginCode = (p.originCityCode ?? '').trim().toUpperCase();
+          this.originalOriginName = PlanDetail.normalizeCityLabel(p.originCityName ?? '');
+          this.originalOriginDisplay = (p.originCityName ?? '').trim();
+          this.originalDestCode = (p.destinationCityCode ?? '').trim().toUpperCase();
+          this.originalDestName = PlanDetail.normalizeCityLabel(p.destinationCityName ?? '');
+          this.originalDestDisplay = (p.destinationCityName ?? '').trim();
           this.flightPage = 0;
           this.ok.set('Cambios guardados.');
           this.busy.set(false);
-          this.alert.toast('success', 'Cambios guardados correctamente');
+          this.alert.toast(
+            'success',
+            routeChanged ? 'Ruta actualizada. Selecciones eliminadas.' : 'Cambios guardados correctamente',
+          );
         },
         error: (e) => {
           const msg = this.msg(e, 'No se pudieron guardar los cambios.');

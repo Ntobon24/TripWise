@@ -77,6 +77,11 @@ export class PlansService {
       dto.returnDate ?? plan.returnDate ?? undefined,
     );
 
+    const previousOrigin = plan.originCityCode;
+    const previousDest = plan.destinationCityCode;
+    const previousOriginName = plan.originCityName;
+    const previousDestName = plan.destinationCityName;
+
     if (dto.title !== undefined) {
       plan.title = dto.title.trim();
     }
@@ -104,16 +109,33 @@ export class PlansService {
     if (dto.returnDate !== undefined) {
       plan.returnDate = dto.returnDate ?? null;
     }
+
+    const routeChanged =
+      previousOrigin !== plan.originCityCode ||
+      previousDest !== plan.destinationCityCode ||
+      this.normalizePlaceLabel(previousOriginName) !== this.normalizePlaceLabel(plan.originCityName) ||
+      this.normalizePlaceLabel(previousDestName) !== this.normalizePlaceLabel(plan.destinationCityName);
+
     if (dto.selectedFlight !== undefined) {
       plan.selectedFlightJson = this.toRecordOrNull(dto.selectedFlight);
+    } else if (routeChanged) {
+      plan.selectedFlightJson = null;
     }
     if (dto.selectedActivities !== undefined) {
       plan.selectedActivitiesJson = this.toRecordArray(dto.selectedActivities);
+    } else if (routeChanged) {
+      plan.selectedActivitiesJson = [];
     }
     if (dto.lockSelections !== undefined) {
       plan.selectionsLocked = dto.lockSelections;
+    } else if (routeChanged) {
+      plan.selectionsLocked = false;
     } else if (dto.selectedFlight !== undefined || dto.selectedActivities !== undefined) {
       plan.selectionsLocked = true;
+    }
+
+    if (routeChanged) {
+      plan.recommendationsJson = null;
     }
 
     const shouldKeepSelections =
@@ -190,6 +212,10 @@ export class PlansService {
     );
   }
 
+  private normalizePlaceLabel(name: string | null | undefined): string {
+    return (name ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
   private validateDates(departureDate?: string, returnDate?: string) {
     const todayIso = new Date().toISOString().slice(0, 10);
     if (departureDate && !DATE_RE.test(departureDate)) {
@@ -220,15 +246,19 @@ export class PlansService {
       return plan.recommendationsJson;
     }
 
-    const rec = await this.recommendations.buildRecommendations({
-      budget,
-      currency: plan.currency,
-      originCityCode: origin,
-      originCityName: plan.originCityName ?? undefined,
-      destinationCityCode: dest,
-      destinationCityName: plan.destinationCityName ?? undefined,
-      departureDate: plan.departureDate ?? undefined,
-    });
-    return rec as Record<string, unknown>;
+    try {
+      const rec = await this.recommendations.buildRecommendations({
+        budget,
+        currency: plan.currency,
+        originCityCode: origin,
+        originCityName: plan.originCityName ?? undefined,
+        destinationCityCode: dest,
+        destinationCityName: plan.destinationCityName ?? undefined,
+        departureDate: plan.departureDate ?? undefined,
+      });
+      return rec as Record<string, unknown>;
+    } catch {
+      return plan.recommendationsJson;
+    }
   }
 }

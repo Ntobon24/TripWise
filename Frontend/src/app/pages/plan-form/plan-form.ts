@@ -216,6 +216,37 @@ export class PlanForm {
     return /^[A-Z0-9]{2,8}$/.test(code.trim().toUpperCase());
   }
 
+  protected onOriginPicked(): void {
+    this.checkSameCityConflict('origen');
+  }
+
+  protected onDestinationPicked(): void {
+    this.checkSameCityConflict('destino');
+  }
+
+  private checkSameCityConflict(picked: 'origen' | 'destino'): void {
+    setTimeout(() => {
+      const oc = (this.originCityCode || '').trim().toUpperCase();
+      const dc = (this.destinationCityCode || '').trim().toUpperCase();
+      if (!oc || !dc || oc !== dc) return;
+      const on = PlanForm.normalizeCityLabel(this.originCityName || '');
+      const dn = PlanForm.normalizeCityLabel(this.destinationCityName || '');
+      if (on && dn && on !== dn) return;
+
+      this.alert.toast('warning', `Origen y destino tienen el mismo código (${oc}). Ajústalo manualmente si son ciudades distintas.`);
+      void this.alert.warning(
+        'Códigos en conflicto',
+        `El código IATA de ${picked} (${oc}) coincide con el de la otra ciudad. ` +
+          'Esto suele ocurrir cuando ambas ciudades comparten país y aún no se ha detectado el código de aeropuerto. ' +
+          'Ajusta manualmente el código IATA del aeropuerto correspondiente (ej. BOG para Bogotá, MDE para Medellín).',
+      );
+    }, 50);
+  }
+
+  private static normalizeCityLabel(name: string): string {
+    return name.trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
   private isValidDateFormat(date: string): boolean {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
     const d = new Date(date + 'T00:00:00');
@@ -255,8 +286,21 @@ export class PlanForm {
         return false;
       }
       if (oc === dc) {
-        this.formErr.set('El origen y el destino no pueden ser la misma ciudad.');
-        return false;
+        const on = PlanForm.normalizeCityLabel(this.originCityName);
+        const dn = PlanForm.normalizeCityLabel(this.destinationCityName);
+        if (on === dn && on.length >= 2) {
+          this.formErr.set('El origen y el destino no pueden ser la misma ciudad.');
+          void this.alert.warning(
+            'Ciudad duplicada',
+            `Origen y destino coinciden (${this.originCityName || oc}).`,
+          );
+          return false;
+        }
+        void this.alert.warning(
+          'Mismo código de país o región',
+          `Origen y destino comparten el código ${oc}, pero las ciudades son distintas (${this.originCityName || '?'} → ${this.destinationCityName || '?'}). ` +
+            'Para vuelos fiables indica el código IATA de cada aeropuerto (ej. BCN y MAD).',
+        );
       }
     }
     if (this.departureDate) {

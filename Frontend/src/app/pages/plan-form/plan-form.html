@@ -135,6 +135,7 @@
           placeholder="Busca la ciudad de origen…"
           [(cityName)]="originCityName"
           [(cityCode)]="originCityCode"
+          (cityPicked)="onOriginPicked()"
         />
         <div class="tw-field">
           <label for="origin-iata">Código IATA / país</label>
@@ -150,6 +151,7 @@
             required
             placeholder="BOG"
             style="text-transform:uppercase"
+            (blur)="onOriginPicked()"
           />
           @if (saveTried() && !isValidCode(originCityCode)) {
             <p class="tw-field-error" role="alert">Código inválido (2–8 letras/números).</p>
@@ -165,6 +167,7 @@
           placeholder="Busca la ciudad de destino…"
           [(cityName)]="destinationCityName"
           [(cityCode)]="destinationCityCode"
+          (cityPicked)="onDestinationPicked()"
         />
         <div class="tw-field">
           <label for="dest-iata">Código IATA / país</label>
@@ -180,6 +183,7 @@
             [required]="!decideForMe"
             placeholder="MAD"
             style="text-transform:uppercase"
+            (blur)="onDestinationPicked()"
           />
           @if (saveTried() && !decideForMe && !isValidCode(destinationCityCode)) {
             <p class="tw-field-error" role="alert">Código inválido (2–8 letras/números).</p>

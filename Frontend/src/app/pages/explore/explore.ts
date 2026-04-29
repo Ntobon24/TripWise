@@ -76,6 +76,10 @@ export class Explore implements OnInit {
     return `${y}-${m}-${day}`;
   }
 
+  private static normalizeCityLabel(name: string): string {
+    return name.trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
   ngOnInit() {
     this.runDestinationSearch();
   }
@@ -137,8 +141,18 @@ export class Explore implements OnInit {
       return;
     }
     if (oc === dc) {
-      this.formErr.set('El origen y el destino no pueden ser la misma ciudad.');
-      return;
+      const on = Explore.normalizeCityLabel(this.originName);
+      const dn = Explore.normalizeCityLabel(this.destName);
+      if (on === dn && on.length >= 2) {
+        this.formErr.set('El origen y el destino no pueden ser la misma ciudad.');
+        void this.alert.warning('Ciudad duplicada', `Origen y destino coinciden (${this.originName || oc}).`);
+        return;
+      }
+      void this.alert.warning(
+        'Mismo código de país o región',
+        `Origen y destino comparten el código ${oc}, pero las ciudades son distintas (${this.originName || '?'} → ${this.destName || '?'}). ` +
+          'Para resultados fiables indica el código IATA de cada aeropuerto (ej. BCN y MAD).',
+      );
     }
     if (this.departureDate && this.departureDate < this.minDate) {
       this.formErr.set('La fecha de salida no puede ser anterior a hoy.');
