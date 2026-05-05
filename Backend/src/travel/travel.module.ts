@@ -6,8 +6,10 @@ import { TripAdvisorService } from './tripadvisor.service';
 import { ViatorService } from './viator.service';
 import { RecommendationsService } from './recommendations.service';
 import { TravelController } from './travel.controller';
+import { GroqModule } from '../groq/groq.module';
 
 @Module({
+  imports: [GroqModule],
   controllers: [TravelController],
   providers: [
     GeoDbService,

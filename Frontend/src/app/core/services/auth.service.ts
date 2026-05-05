@@ -66,6 +66,26 @@ export class AuthService {
     );
   }
 
+  updateProfile(body: { email?: string; currentPassword?: string; newPassword?: string }) {
+    return this.http
+      .patch<{
+        success: boolean;
+        message?: string;
+        user: { id: string; email: string; name: string };
+      }>(this.url('/auth/profile'), body)
+      .pipe(
+        tap((res) => {
+          if (res.user) {
+            this.user.set({
+              sub: res.user.id,
+              email: res.user.email,
+              name: res.user.name,
+            });
+          }
+        }),
+      );
+  }
+
   isLoggedIn(): boolean {
     return !!getStoredToken();
   }

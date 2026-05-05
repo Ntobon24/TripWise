@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-
 @Injectable()
 export class GeoDbService {
   private readonly logger = new Logger(GeoDbService.name);
@@ -12,13 +11,23 @@ export class GeoDbService {
     return Boolean(this.config.get<string>('GEODB_RAPIDAPI_KEY')?.trim());
   }
 
+  /** GeoDB Cities API host; tolerates common .env typo `.rapidapi.coms` → `.rapidapi.com`. */
+  private getHost(): string {
+    let host =
+      this.config.get<string>('GEODB_RAPIDAPI_HOST')?.trim() || 'wft-geo-db.p.rapidapi.com';
+    if (/\.p\.rapidapi\.coms$/i.test(host)) {
+      host = host.replace(/\.coms$/i, '.com');
+    }
+    return host;
+  }
+
   async searchCities(namePrefix: string, limit = 10): Promise<unknown[]> {
     const key = this.config.get<string>('GEODB_RAPIDAPI_KEY');
     if (!key) {
       return [];
     }
 
-    const host = this.config.get<string>('GEODB_RAPIDAPI_HOST') ?? 'wft-geo-db.p.rapidapi.com';
+    const host = this.getHost();
     const params = new URLSearchParams({
       namePrefix: namePrefix.trim(),
       limit: String(Math.min(limit, 10)),

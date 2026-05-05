@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -11,7 +12,9 @@ import {
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { CurrentUserId } from './decorators/current-user-id.decorator';
 
 type JwtUser = { sub: string; email: string; name: string };
 
@@ -43,5 +46,11 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   me(@Req() req: { user: JwtUser }) {
     return { user: req.user };
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  updateProfile(@CurrentUserId() userId: string, @Body() dto: UpdateProfileDto) {
+    return this.auth.updateProfile(userId, dto);
   }
 }

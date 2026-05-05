@@ -9,6 +9,7 @@ import { RecommendationsQueryDto } from './dto/recommendations-query.dto';
 import { CitiesSearchQueryDto } from './dto/cities-search-query.dto';
 import { AutoPlanQueryDto } from './dto/auto-plan-query.dto';
 import { mapGeodbCity, type UnifiedCity } from './mappers/city-result.mapper';
+import { GroqService } from '../groq/groq.service';
 
 
 @Controller('travel')
@@ -20,6 +21,7 @@ export class TravelController {
     private readonly tripadvisor: TripAdvisorService,
     private readonly viator: ViatorService,
     private readonly recommendationsService: RecommendationsService,
+    private readonly groq: GroqService,
   ) {}
 
   @Get('status')
@@ -54,6 +56,12 @@ export class TravelController {
         hint: this.viator.isConfigured()
           ? null
           : 'VIATOR_API_KEY reservada; el programa partner requiere alta en Viator.',
+      },
+      groq: {
+        configured: this.groq.isConfigured(),
+        hint: this.groq.isConfigured()
+          ? null
+          : 'GROQ_API_KEY en .env (https://console.groq.com/) para estimaciones y plan «Crea tu experiencia».',
       },
     };
   }

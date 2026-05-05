@@ -1,0 +1,45 @@
+.exp-page {
+  padding-bottom: 2.5rem;
+  max-width: 520px;
+}
+
+.exp-intro {
+  margin-bottom: 1.25rem;
+  font-size: 0.95rem;
+}
+
+.exp-form {
+  padding: 1.25rem 1.35rem;
+}
+
+.field-group-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tw-muted);
+  margin: 0 0 0.5rem;
+}
+
+.city-block {
+  margin-bottom: 1rem;
+}
+
+.code-input {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.exp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 72px;
+}

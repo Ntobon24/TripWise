@@ -1,0 +1,89 @@
+<div class="auth-wrap profile-wrap">
+  <div class="tw-card auth-card profile-card">
+    <h1>Mi perfil</h1>
+    <p class="tw-muted">
+      Puedes cambiar tu correo y tu contraseña. El nombre no se puede modificar desde aquí.
+    </p>
+
+    @if (err()) {
+      <p class="tw-error" role="alert">{{ err() }}</p>
+    }
+
+    <form #profForm="ngForm" (ngSubmit)="submit(profForm)">
+      <div class="tw-field">
+        <label for="prof-name">Nombre</label>
+        <input id="prof-name" name="name" [ngModel]="name" disabled autocomplete="name" />
+      </div>
+
+      <div class="tw-field">
+        <label for="prof-email">Correo</label>
+        <input
+          id="prof-email"
+          [(ngModel)]="email"
+          name="email"
+          type="email"
+          required
+          email
+          autocomplete="email"
+        />
+        @if (profForm.submitted && profForm.controls['email']?.invalid) {
+          <p class="tw-field-error">Introduce un correo válido.</p>
+        }
+      </div>
+
+      <fieldset class="pwd-fieldset">
+        <legend>Cambiar contraseña</legend>
+        <p class="tw-field-hint pwd-hint">
+          Opcional. Si la cambias, debes escribir tu contraseña actual.
+        </p>
+
+        <div class="tw-field">
+          <label for="prof-cur-pwd">Contraseña actual</label>
+          <input
+            id="prof-cur-pwd"
+            [(ngModel)]="currentPassword"
+            name="currentPassword"
+            type="password"
+            autocomplete="current-password"
+          />
+        </div>
+
+        <div class="tw-field">
+          <label for="prof-new-pwd">Nueva contraseña</label>
+          <input
+            id="prof-new-pwd"
+            [(ngModel)]="newPassword"
+            name="newPassword"
+            type="password"
+            minlength="8"
+            [pattern]="pwdPattern"
+            autocomplete="new-password"
+          />
+          @if (profForm.submitted && profForm.controls['newPassword']?.errors?.['minlength']) {
+            <p class="tw-field-error">Mínimo 8 caracteres.</p>
+          }
+          @if (profForm.submitted && profForm.controls['newPassword']?.errors?.['pattern']) {
+            <p class="tw-field-error">Incluye al menos una letra y un número.</p>
+          }
+        </div>
+
+        <div class="tw-field">
+          <label for="prof-confirm-pwd">Confirmar nueva contraseña</label>
+          <input
+            id="prof-confirm-pwd"
+            [(ngModel)]="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            autocomplete="new-password"
+          />
+        </div>
+      </fieldset>
+
+      <button type="submit" class="tw-btn wide" [disabled]="busy()">
+        {{ busy() ? 'Guardando…' : 'Guardar cambios' }}
+      </button>
+    </form>
+
+    <p class="foot-link tw-muted"><a routerLink="/planes">← Volver a mis planes</a></p>
+  </div>
+</div>

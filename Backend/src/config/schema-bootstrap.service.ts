@@ -16,7 +16,9 @@ export class SchemaBootstrapService implements OnApplicationBootstrap {
       alter table if exists public.travel_plans
         add column if not exists selected_flight_json jsonb,
         add column if not exists selected_activities_json jsonb,
-        add column if not exists selections_locked boolean not null default false;
+        add column if not exists selections_locked boolean not null default false,
+        add column if not exists ai_lodging_estimate numeric(14,2),
+        add column if not exists ai_food_estimate numeric(14,2);
     `;
 
     try {

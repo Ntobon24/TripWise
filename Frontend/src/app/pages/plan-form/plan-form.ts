@@ -289,10 +289,8 @@ export class PlanForm {
         const on = PlanForm.normalizeCityLabel(this.originCityName);
         const dn = PlanForm.normalizeCityLabel(this.destinationCityName);
         if (on === dn && on.length >= 2) {
-          this.formErr.set('El origen y el destino no pueden ser la misma ciudad.');
-          void this.alert.warning(
-            'Ciudad duplicada',
-            `Origen y destino coinciden (${this.originCityName || oc}).`,
+          this.formErr.set(
+            `Origen y destino no pueden ser la misma ciudad (${this.originCityName || oc}).`,
           );
           return false;
         }
@@ -352,7 +350,11 @@ export class PlanForm {
 
   protected previewRecommendations() {
     this.saveTried.set(true);
-    if (!this.validateCore()) return;
+    if (!this.validateCore()) {
+      const msg = this.formErr();
+      if (msg) void this.alert.validation('Revisa el formulario', msg);
+      return;
+    }
     this.err.set('');
     this.previewBusy.set(true);
     this.preview.set(null);
@@ -404,8 +406,10 @@ export class PlanForm {
           this.previewBusy.set(false);
         },
         error: (e) => {
-          this.err.set(this.msg(e));
+          const errMsg = this.msg(e);
+          this.err.set(errMsg);
           this.previewBusy.set(false);
+          void this.alert.error('No se pudieron cargar recomendaciones', errMsg);
         },
       });
   }
@@ -486,7 +490,11 @@ export class PlanForm {
 
   protected save() {
     this.saveTried.set(true);
-    if (!this.validateCore()) return;
+    if (!this.validateCore()) {
+      const msg = this.formErr();
+      if (msg) void this.alert.validation('Revisa el formulario', msg);
+      return;
+    }
     this.busy.set(true);
     this.err.set('');
     if (this.decideForMe) {
@@ -537,8 +545,11 @@ export class PlanForm {
         next: (rec) => {
           const selectedFlight = this.pickFlightForAuto(rec);
           if (!selectedFlight) {
-            this.err.set('No se encontró un vuelo válido para tu presupuesto. Ajusta el monto e inténtalo de nuevo.');
+            const msg =
+              'No se encontró un vuelo válido para tu presupuesto. Ajusta el monto e inténtalo de nuevo.';
+            this.err.set(msg);
             this.busy.set(false);
+            void this.alert.warning('Sin vuelos disponibles', msg);
             return;
           }
 

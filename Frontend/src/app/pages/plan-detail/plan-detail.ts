@@ -7,6 +7,7 @@ import { TravelService } from '../../core/services/travel.service';
 import type {
   ActivitySummary,
   FlightOfferSummary,
+  PlanPlaceReviewItem,
   RecommendationsPayload,
   TravelPlanSummary,
 } from '../../core/models/api.types';
@@ -57,25 +58,55 @@ export class PlanDetail implements OnInit {
   protected readonly DONUT_R = 38;
   protected readonly DONUT_C = 2 * Math.PI * 38;
 
-  protected readonly flightPct = computed(() => {
-    if (!this.budgetAmount) return 0;
-    return Math.min(100, (this.selectedFlightCost() / this.budgetAmount) * 100);
-  });
+  /** Fracción del presupuesto total (0–∞ si se excede). */
+  protected readonly flightFrac = computed(() =>
+    this.budgetAmount ? this.selectedFlightCost() / this.budgetAmount : 0,
+  );
+  protected readonly activitiesFrac = computed(() =>
+    this.budgetAmount ? this.selectedActivitiesCost() / this.budgetAmount : 0,
+  );
+  protected readonly lodgingFrac = computed(() =>
+    this.budgetAmount ? (this.plan()?.aiLodgingEstimate ?? 0) / this.budgetAmount : 0,
+  );
+  protected readonly foodFrac = computed(() =>
+    this.budgetAmount ? (this.plan()?.aiFoodEstimate ?? 0) / this.budgetAmount : 0,
+  );
 
-  protected readonly activitiesPct = computed(() => {
-    if (!this.budgetAmount) return 0;
-    const actP = (this.selectedActivitiesCost() / this.budgetAmount) * 100;
-    return Math.max(0, Math.min(actP, 100 - this.flightPct()));
-  });
+  protected readonly flightPct = computed(() =>
+    Math.min(100, this.flightFrac() * 100),
+  );
+  protected readonly activitiesPct = computed(() =>
+    Math.min(100, this.activitiesFrac() * 100),
+  );
+  protected readonly lodgingPct = computed(() =>
+    Math.min(100, this.lodgingFrac() * 100),
+  );
+  protected readonly foodPct = computed(() => Math.min(100, this.foodFrac() * 100));
 
   protected readonly usedPct = computed(() => {
     if (!this.budgetAmount) return 0;
-    return Math.min(100, (this.selectedTotalCost() / this.budgetAmount) * 100);
+    return Math.min(
+      100,
+      (this.selectedTotalCost() / this.budgetAmount) * 100,
+    );
   });
 
-  protected readonly flightArc = computed(() => (this.flightPct() / 100) * this.DONUT_C);
-  protected readonly activitiesArc = computed(() => (this.activitiesPct() / 100) * this.DONUT_C);
-  protected readonly activitiesRotateDeg = computed(() => -90 + (this.flightPct() / 100) * 360);
+  protected readonly flightArc = computed(() => this.flightFrac() * this.DONUT_C);
+  protected readonly activitiesArc = computed(() => this.activitiesFrac() * this.DONUT_C);
+  protected readonly lodgingArc = computed(() => this.lodgingFrac() * this.DONUT_C);
+  protected readonly foodArc = computed(() => this.foodFrac() * this.DONUT_C);
+
+  protected readonly activitiesRotateDeg = computed(
+    () => -90 + this.flightFrac() * 360,
+  );
+  protected readonly lodgingRotateDeg = computed(
+    () => -90 + (this.flightFrac() + this.activitiesFrac()) * 360,
+  );
+  protected readonly foodRotateDeg = computed(
+    () =>
+      -90 +
+      (this.flightFrac() + this.activitiesFrac() + this.lodgingFrac()) * 360,
+  );
 
   protected busy = signal(false);
   protected err = signal('');
@@ -102,6 +133,19 @@ export class PlanDetail implements OnInit {
   protected readonly editBusy = signal(false);
   protected readonly editErr = signal('');
   protected readonly freshRec = signal<RecommendationsPayload | null>(null);
+
+  protected readonly detailTab = signal<
+    'presupuesto' | 'actividades' | 'reviews' | 'estimacion'
+  >('presupuesto');
+  protected readonly reviews = signal<PlanPlaceReviewItem[]>([]);
+  protected readonly reviewsLoading = signal(false);
+  protected readonly reviewsErr = signal('');
+  protected readonly reviewsHint = signal<string | null>(null);
+  private readonly reviewsFetched = signal(false);
+
+  protected readonly estimacionLoading = signal(false);
+  protected readonly estimacionErr = signal('');
+  private readonly estimacionFetched = signal(false);
 
   protected readonly editFlightId = signal<string | null>(null);
   protected readonly editActivityKeys = signal<Set<string>>(new Set());
@@ -201,6 +245,12 @@ export class PlanDetail implements OnInit {
         this.returnDate = p.returnDate ?? '';
         this.editMode.set(false);
         this.freshRec.set(null);
+        this.reviewsFetched.set(false);
+        this.reviews.set([]);
+        this.reviewsErr.set('');
+        this.reviewsHint.set(null);
+        this.estimacionFetched.set(false);
+        this.estimacionErr.set('');
       },
       error: (e) => this.err.set(this.msg(e, 'No se encontró el plan.')),
     });
@@ -224,6 +274,73 @@ export class PlanDetail implements OnInit {
     this.editMode.set(false);
     this.editErr.set('');
     this.freshRec.set(null);
+  }
+
+  protected setDetailTab(
+    tab: 'presupuesto' | 'actividades' | 'reviews' | 'estimacion',
+  ) {
+    this.detailTab.set(tab);
+    if (tab === 'reviews' && !this.reviewsFetched()) {
+      this.loadReviews();
+    }
+    if (tab === 'estimacion' && !this.estimacionFetched()) {
+      this.loadEstimacionIfNeeded();
+    }
+  }
+
+  protected retryEstimacion() {
+    this.estimacionFetched.set(false);
+    this.loadEstimacionIfNeeded(true);
+  }
+
+  private loadEstimacionIfNeeded(force = false) {
+    if (!this.id) {
+      return;
+    }
+    const p = this.plan();
+    if (
+      !force &&
+      p?.aiLodgingEstimate != null &&
+      p?.aiFoodEstimate != null
+    ) {
+      this.estimacionFetched.set(true);
+      return;
+    }
+    this.estimacionLoading.set(true);
+    this.estimacionErr.set('');
+    this.plansApi.refreshAiEstimates(this.id).subscribe({
+      next: (plan) => {
+        this.plan.set(plan);
+        this.estimacionLoading.set(false);
+        this.estimacionFetched.set(true);
+      },
+      error: (e) => {
+        this.estimacionLoading.set(false);
+        this.estimacionFetched.set(true);
+        this.estimacionErr.set(this.msg(e, 'No se pudo obtener la estimación.'));
+      },
+    });
+  }
+
+  private loadReviews() {
+    if (!this.id) {
+      return;
+    }
+    this.reviewsLoading.set(true);
+    this.reviewsErr.set('');
+    this.plansApi.getReviews(this.id).subscribe({
+      next: (r) => {
+        this.reviewsLoading.set(false);
+        this.reviewsFetched.set(true);
+        this.reviewsHint.set(r.hint ?? null);
+        this.reviews.set(r.places ?? []);
+      },
+      error: (e) => {
+        this.reviewsLoading.set(false);
+        this.reviewsFetched.set(true);
+        this.reviewsErr.set(this.msg(e, 'No se pudieron cargar las reseñas.'));
+      },
+    });
   }
 
   protected loadFreshRecommendations() {
@@ -677,8 +794,21 @@ export class PlanDetail implements OnInit {
     return this.selectedActivities().reduce((sum, a) => sum + (a.priceAmount ?? 0), 0);
   }
 
+  protected aiLodgingCost(): number {
+    return this.plan()?.aiLodgingEstimate ?? 0;
+  }
+
+  protected aiFoodCost(): number {
+    return this.plan()?.aiFoodEstimate ?? 0;
+  }
+
   protected selectedTotalCost(): number {
-    return this.selectedFlightCost() + this.selectedActivitiesCost();
+    return (
+      this.selectedFlightCost() +
+      this.selectedActivitiesCost() +
+      this.aiLodgingCost() +
+      this.aiFoodCost()
+    );
   }
 
   protected remainingBudget(): number {

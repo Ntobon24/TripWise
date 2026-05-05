@@ -29,6 +29,10 @@ export class Register {
   protected submit(form: NgForm) {
     form.control.markAllAsTouched();
     if (form.invalid) {
+      void this.alert.validation(
+        'Formulario incompleto',
+        'Revisa nombre, correo y contraseña (debe incluir al menos una letra y un número).',
+      );
       return;
     }
     this.busy.set(true);

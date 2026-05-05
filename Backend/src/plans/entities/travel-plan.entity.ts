@@ -60,6 +60,24 @@ export class TravelPlan {
   @Column({ name: 'selections_locked', type: 'boolean', default: false })
   selectionsLocked: boolean;
 
+  @Column({
+    name: 'ai_lodging_estimate',
+    type: 'decimal',
+    precision: 14,
+    scale: 2,
+    nullable: true,
+  })
+  aiLodgingEstimate: string | null;
+
+  @Column({
+    name: 'ai_food_estimate',
+    type: 'decimal',
+    precision: 14,
+    scale: 2,
+    nullable: true,
+  })
+  aiFoodEstimate: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

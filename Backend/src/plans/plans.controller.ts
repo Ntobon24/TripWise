@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -13,6 +15,7 @@ import { CurrentUserId } from '../auth/decorators/current-user-id.decorator';
 import { PlansService } from './plans.service';
 import { CreateTravelPlanDto } from './dto/create-plan.dto';
 import { UpdateTravelPlanDto } from './dto/update-plan.dto';
+import { AiExperienceDto } from './dto/ai-experience.dto';
 
 @Controller('plans')
 @UseGuards(JwtAuthGuard)
@@ -24,9 +27,26 @@ export class PlansController {
     return this.plans.create(userId, dto);
   }
 
+  @Post('ai-experience')
+  @HttpCode(HttpStatus.CREATED)
+  createAiExperience(@CurrentUserId() userId: string, @Body() dto: AiExperienceDto) {
+    return this.plans.createFromAiExperience(userId, dto);
+  }
+
   @Get()
   list(@CurrentUserId() userId: string) {
     return this.plans.listForUser(userId);
+  }
+
+  @Get(':id/reviews')
+  reviews(@CurrentUserId() userId: string, @Param('id') id: string) {
+    return this.plans.getPlaceReviewsForPlan(userId, id);
+  }
+
+  @Post(':id/ai-estimates')
+  @HttpCode(HttpStatus.OK)
+  refreshAiEstimates(@CurrentUserId() userId: string, @Param('id') id: string) {
+    return this.plans.refreshAiBudgetEstimates(userId, id);
   }
 
   @Get(':id')

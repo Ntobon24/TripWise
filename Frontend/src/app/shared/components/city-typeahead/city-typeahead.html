@@ -12,6 +12,8 @@
       aria-autocomplete="list"
       autocomplete="off"
       spellcheck="false"
+      [name]="fieldId + '-q'"
+      [ngModelOptions]="{ standalone: true }"
       [(ngModel)]="displayValue"
       (ngModelChange)="onSearch($event)"
       (focus)="onFocus()"

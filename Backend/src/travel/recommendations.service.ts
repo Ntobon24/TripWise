@@ -6,6 +6,8 @@ import type { FlightOfferSummary } from './mappers/flight-offer.mapper';
 import { mapFlightApiResponseToSummaries } from './mappers/flightapi-response.mapper';
 import { mapOtmFeatureToSummary } from './mappers/otm-place.mapper';
 import type { ActivitySummary } from './mappers/activity.mapper';
+import { DESTINATION_POOL } from './destination-pool';
+import { GroqService } from '../groq/groq.service';
 
 export type BudgetRecommendationInput = {
   budget: number;
@@ -17,51 +19,8 @@ export type BudgetRecommendationInput = {
   departureDate?: string;
 };
 
-type DestinationOption = {
-  cityCode: string;
-  cityName: string;
-  minBudget: number;
-  maxBudget: number;
-};
-
 const MIN_BUDGET = 0.01;
 const MAX_BUDGET = 10_000_000;
-const DESTINATION_POOL: DestinationOption[] = [
-  { cityCode: 'NYC', cityName: 'New York', minBudget: 1100, maxBudget: 6000 },
-  { cityCode: 'LON', cityName: 'Londres', minBudget: 1050, maxBudget: 5600 },
-  { cityCode: 'BER', cityName: 'Berlin', minBudget: 850, maxBudget: 4300 },
-  { cityCode: 'ROM', cityName: 'Roma', minBudget: 900, maxBudget: 4500 },
-  { cityCode: 'AMS', cityName: 'Amsterdam', minBudget: 950, maxBudget: 4700 },
-  { cityCode: 'IST', cityName: 'Estambul', minBudget: 700, maxBudget: 3800 },
-  { cityCode: 'DXB', cityName: 'Dubai', minBudget: 1200, maxBudget: 7000 },
-  { cityCode: 'BKK', cityName: 'Bangkok', minBudget: 900, maxBudget: 5000 },
-  { cityCode: 'TYO', cityName: 'Tokyo', minBudget: 1300, maxBudget: 7800 },
-  { cityCode: 'SEL', cityName: 'Seul', minBudget: 1200, maxBudget: 7200 },
-  { cityCode: 'SIN', cityName: 'Singapur', minBudget: 1350, maxBudget: 7600 },
-  { cityCode: 'SYD', cityName: 'Sidney', minBudget: 1600, maxBudget: 9000 },
-  { cityCode: 'CPT', cityName: 'Ciudad del Cabo', minBudget: 1200, maxBudget: 6800 },
-  { cityCode: 'CAI', cityName: 'El Cairo', minBudget: 700, maxBudget: 3600 },
-  { cityCode: 'MRA', cityName: 'Marrakech', minBudget: 780, maxBudget: 3900 },
-  { cityCode: 'MEX', cityName: 'Ciudad de Mexico', minBudget: 350, maxBudget: 2200 },
-  { cityCode: 'LIM', cityName: 'Lima', minBudget: 320, maxBudget: 2100 },
-  { cityCode: 'SCL', cityName: 'Santiago de Chile', minBudget: 380, maxBudget: 2600 },
-  { cityCode: 'MAD', cityName: 'Madrid', minBudget: 700, maxBudget: 4000 },
-  { cityCode: 'BCN', cityName: 'Barcelona', minBudget: 760, maxBudget: 4200 },
-  { cityCode: 'MIA', cityName: 'Miami', minBudget: 650, maxBudget: 3500 },
-  { cityCode: 'CUN', cityName: 'Cancun', minBudget: 450, maxBudget: 2800 },
-  { cityCode: 'BUE', cityName: 'Buenos Aires', minBudget: 450, maxBudget: 2600 },
-  { cityCode: 'RIO', cityName: 'Rio de Janeiro', minBudget: 550, maxBudget: 3200 },
-  { cityCode: 'PAR', cityName: 'Paris', minBudget: 900, maxBudget: 5200 },
-  { cityCode: 'ZRH', cityName: 'Zurich', minBudget: 1200, maxBudget: 7000 },
-  { cityCode: 'PRG', cityName: 'Praga', minBudget: 780, maxBudget: 3900 },
-  { cityCode: 'VIE', cityName: 'Viena', minBudget: 820, maxBudget: 4100 },
-  { cityCode: 'BUD', cityName: 'Budapest', minBudget: 700, maxBudget: 3600 },
-  { cityCode: 'ATH', cityName: 'Atenas', minBudget: 760, maxBudget: 3900 },
-  { cityCode: 'MNL', cityName: 'Manila', minBudget: 900, maxBudget: 5000 },
-  { cityCode: 'DEL', cityName: 'Nueva Delhi', minBudget: 900, maxBudget: 5200 },
-  { cityCode: 'JNB', cityName: 'Johannesburgo', minBudget: 1050, maxBudget: 6000 },
-  { cityCode: 'HNL', cityName: 'Honolulu', minBudget: 1500, maxBudget: 8200 },
-];
 
 function defaultDepartureDate(): string {
   const d = new Date();
@@ -74,12 +33,25 @@ function normalizeLocationCode(code: string): string {
   return code.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 8);
 }
 
+export type AiExperienceInput = {
+  budget: number;
+  currency?: string;
+  originCityCode: string;
+  originCityName?: string;
+  continent?: 'europe' | 'americas' | 'asia' | 'africa' | 'oceania' | 'any';
+  tripDays?: number;
+  interests?: string;
+  pace?: string;
+  travelParty?: string;
+};
+
 @Injectable()
 export class RecommendationsService {
   constructor(
     private readonly geodb: GeoDbService,
     private readonly flightApi: FlightApiService,
     private readonly otm: OpenTripMapService,
+    private readonly groq: GroqService,
   ) {}
 
   assertValidBudget(budget: number) {
@@ -243,6 +215,102 @@ export class RecommendationsService {
         ...rec.meta,
         source: 'auto-plan',
         note: 'Plan sugerido automaticamente segun tu presupuesto.',
+      },
+    };
+  }
+
+  async buildAiExperiencePlan(input: AiExperienceInput) {
+    this.assertValidBudget(input.budget);
+    if (!this.groq.isConfigured()) {
+      throw new BadRequestException(
+        'La IA no está disponible: configura GROQ_API_KEY en Backend/.env.',
+      );
+    }
+
+    const origin = normalizeLocationCode(input.originCityCode.trim());
+    let pool = DESTINATION_POOL.filter((d) => d.cityCode !== origin);
+
+    if (input.continent && input.continent !== 'any') {
+      const filtered = pool.filter((d) => d.continent === input.continent);
+      if (filtered.length) {
+        pool = filtered;
+      }
+    }
+
+    pool = pool.filter(
+      (d) => input.budget >= d.minBudget * 0.75 && input.budget <= d.maxBudget * 1.2,
+    );
+    if (!pool.length) {
+      pool = DESTINATION_POOL.filter((d) => d.cityCode !== origin);
+    }
+
+    const poolForPrompt = pool.map((d) => ({
+      cityCode: d.cityCode,
+      cityName: d.cityName,
+      continent: d.continent,
+    }));
+
+    const raw = (await this.groq.chatJson({
+      system:
+        'Eres un planificador de viajes. Debes elegir SOLO un destino de la lista JSON proporcionada por el usuario (campo cityCode debe coincidir exactamente). Responde SOLO un objeto JSON con: cityCode (string), tripDays (entero entre 3 y 14), title (string corto en español para el viaje), departureOffsetDays (entero entre 14 y 60: días desde hoy hasta la fecha de ida).',
+      user: `Lista permitida: ${JSON.stringify(poolForPrompt)}
+Presupuesto total orientativo: ${input.budget} ${(input.currency ?? 'USD').toUpperCase()}
+Código de origen (referencia de aeropuerto/zona): ${origin}
+Nombre origen: ${input.originCityName ?? '(no indicado)'}
+Continente preferido: ${input.continent ?? 'cualquiera'}
+Días deseados (si no tiene sentido, ignóralo): ${input.tripDays ?? 'elige tú'}
+Intereses / tipo de viaje: ${input.interests ?? 'sin detalle'}
+Ritmo: ${input.pace ?? 'sin preferencia'}
+Compañía: ${input.travelParty ?? 'sin preferencia'}
+
+cityCode DEBE ser uno de la lista. Variedad: evita repetir siempre el mismo destino si hay alternativas razonables.`,
+    })) as Record<string, unknown>;
+
+    const codeRaw = String(raw['cityCode'] ?? '')
+      .toUpperCase()
+      .replace(/[^A-Z]/g, '')
+      .slice(0, 8);
+    const picked =
+      pool.find((p) => p.cityCode === codeRaw) ??
+      pool[Math.floor(Math.random() * Math.max(pool.length, 1))] ??
+      DESTINATION_POOL[0];
+
+    const tripDays = Math.min(
+      14,
+      Math.max(3, Math.round(Number(raw['tripDays']) || input.tripDays || 7)),
+    );
+    const depOffset = Math.min(
+      60,
+      Math.max(14, Math.round(Number(raw['departureOffsetDays']) || 21)),
+    );
+    const title = String(raw['title'] ?? `Viaje a ${picked.cityName}`).slice(0, 200);
+
+    const dep = new Date();
+    dep.setDate(dep.getDate() + depOffset);
+    const ret = new Date(dep);
+    ret.setDate(ret.getDate() + tripDays);
+
+    const departureDate = dep.toISOString().slice(0, 10);
+    const returnDate = ret.toISOString().slice(0, 10);
+
+    const rec = await this.buildRecommendations({
+      budget: input.budget,
+      currency: input.currency,
+      originCityCode: origin,
+      originCityName: input.originCityName,
+      destinationCityCode: picked.cityCode,
+      destinationCityName: picked.cityName,
+      departureDate,
+    });
+
+    return {
+      ...rec,
+      returnDate,
+      planTitle: title,
+      meta: {
+        ...rec.meta,
+        source: 'ai-experience',
+        note: 'Plan generado con IA a partir de tus preferencias.',
       },
     };
   }

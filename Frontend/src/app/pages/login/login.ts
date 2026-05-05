@@ -35,6 +35,10 @@ export class Login implements OnInit {
   protected submit(form: NgForm) {
     form.control.markAllAsTouched();
     if (form.invalid) {
+      void this.alert.validation(
+        'Formulario incompleto',
+        'Introduce un correo válido y tu contraseña.',
+      );
       return;
     }
     this.busy.set(true);

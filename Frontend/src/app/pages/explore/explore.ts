@@ -111,33 +111,38 @@ export class Explore implements OnInit {
     }
   }
 
+  private failExploreForm(msg: string): void {
+    this.formErr.set(msg);
+    void this.alert.validation('Revisa los datos', msg);
+  }
+
   protected runRecommendations() {
     this.formErr.set('');
     const budget = Number(this.budget);
     if (!Number.isFinite(budget) || budget < 1) {
-      this.formErr.set('El presupuesto debe ser al menos 1.');
+      this.failExploreForm('El presupuesto debe ser al menos 1.');
       return;
     }
     if (budget > 10_000_000) {
-      this.formErr.set('El presupuesto no puede superar 10.000.000.');
+      this.failExploreForm('El presupuesto no puede superar 10.000.000.');
       return;
     }
     const oc = this.originCode.trim().toUpperCase();
     const dc = this.destCode.trim().toUpperCase();
     if (!oc) {
-      this.formErr.set('Indica una ciudad de origen.');
+      this.failExploreForm('Indica una ciudad de origen.');
       return;
     }
     if (!/^[A-Z0-9]{2,8}$/.test(oc)) {
-      this.formErr.set('El código de origen solo puede tener letras y números (2–8 caracteres).');
+      this.failExploreForm('El código de origen solo puede tener letras y números (2–8 caracteres).');
       return;
     }
     if (!dc) {
-      this.formErr.set('Indica una ciudad de destino.');
+      this.failExploreForm('Indica una ciudad de destino.');
       return;
     }
     if (!/^[A-Z0-9]{2,8}$/.test(dc)) {
-      this.formErr.set('El código de destino solo puede tener letras y números (2–8 caracteres).');
+      this.failExploreForm('El código de destino solo puede tener letras y números (2–8 caracteres).');
       return;
     }
     if (oc === dc) {
@@ -155,7 +160,7 @@ export class Explore implements OnInit {
       );
     }
     if (this.departureDate && this.departureDate < this.minDate) {
-      this.formErr.set('La fecha de salida no puede ser anterior a hoy.');
+      this.failExploreForm('La fecha de salida no puede ser anterior a hoy.');
       return;
     }
     this.loadingRec.set(true);

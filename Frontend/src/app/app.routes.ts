@@ -8,6 +8,8 @@ import { Login } from './pages/login/login';
 import { PlansList } from './pages/plans-list/plans-list';
 import { PlanForm } from './pages/plan-form/plan-form';
 import { PlanDetail } from './pages/plan-detail/plan-detail';
+import { Profile } from './pages/profile/profile';
+import { ExperienceCreate } from './pages/experience-create/experience-create';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'inicio' },
@@ -15,12 +17,14 @@ export const routes: Routes = [
   { path: 'explorar', component: Explore },
   { path: 'registro', component: Register, canActivate: [guestGuard] },
   { path: 'entrar', component: Login, canActivate: [guestGuard] },
+  { path: 'perfil', component: Profile, canActivate: [authGuard] },
   {
     path: 'planes',
     canActivate: [authGuard],
     children: [
       { path: '', component: PlansList },
       { path: 'nuevo', component: PlanForm },
+      { path: 'experiencia', component: ExperienceCreate },
       { path: ':id', component: PlanDetail },
     ],
   },

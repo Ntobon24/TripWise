@@ -16,6 +16,8 @@ export type TravelPlanSummary = {
   title: string;
   budgetAmount: number;
   currency: string;
+  aiLodgingEstimate?: number | null;
+  aiFoodEstimate?: number | null;
   originCityCode: string | null;
   originCityName: string | null;
   destinationCityCode: string | null;
@@ -42,6 +44,7 @@ export type TravelIntegrationsStatus = {
   openTripMap: { configured: boolean; hint: string | null };
   tripadvisor: { configured: boolean; hint: string | null };
   viator: { configured: boolean; hint: string | null };
+  groq: { configured: boolean; hint: string | null };
 };
 
 export type UnifiedCity = {
@@ -92,6 +95,26 @@ export type ActivitySummary = {
   priceCurrency: string | null;
   estimatedPrice: boolean;
   withinBudget: boolean | null;
+};
+
+export type PlanPlaceReviewItem = {
+  activityId: string;
+  activityName: string;
+  name: string | null;
+  descriptionText: string | null;
+  imageUrl: string | null;
+  otmUrl: string | null;
+  rate: number | null;
+};
+
+export type PlanReviewsResponse = {
+  success: boolean;
+  openTripMapConfigured: boolean;
+  /** Contenido basado en la ciudad de destino, no en actividades sueltas. */
+  reviewScope?: 'destination';
+  destinationLabel?: string;
+  hint?: string | null;
+  places: PlanPlaceReviewItem[];
 };
 
 export type RecommendationsPayload = {

@@ -4,6 +4,7 @@ import { environment } from '../../../environments/environment';
 import type {
   ActivitySummary,
   FlightOfferSummary,
+  PlanReviewsResponse,
   PlansListResponse,
   TravelPlanSummary,
 } from '../models/api.types';
@@ -40,6 +41,11 @@ export class PlansService {
     return this.http.get<TravelPlanSummary>(this.url(`/plans/${id}`));
   }
 
+  /** OpenTripMap: descripciones / valoraciones por actividad del plan. */
+  getReviews(planId: string) {
+    return this.http.get<PlanReviewsResponse>(this.url(`/plans/${planId}/reviews`));
+  }
+
   create(body: PlanPayload) {
     return this.http.post<TravelPlanSummary>(this.url('/plans'), body);
   }
@@ -53,5 +59,23 @@ export class PlansService {
     return this.http.delete<{ success: boolean; message: string }>(
       this.url(`/plans/${id}`),
     );
+  }
+
+  refreshAiEstimates(planId: string) {
+    return this.http.post<TravelPlanSummary>(this.url(`/plans/${planId}/ai-estimates`), {});
+  }
+
+  createAiExperience(body: {
+    budget: number;
+    currency?: string;
+    originCityCode: string;
+    originCityName?: string;
+    continent?: string;
+    tripDays?: number;
+    interests?: string;
+    pace?: string;
+    travelParty?: string;
+  }) {
+    return this.http.post<TravelPlanSummary>(this.url('/plans/ai-experience'), body);
   }
 }

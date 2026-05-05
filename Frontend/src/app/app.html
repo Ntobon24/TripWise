@@ -13,10 +13,10 @@
       <div class="auth">
         <app-currency-selector />
         @if (authSvc.user(); as u) {
-          <div class="user-chip">
+          <a routerLink="/perfil" class="user-chip user-chip--link" title="Mi perfil">
             <span class="user-avatar" aria-hidden="true">{{ u.name ? u.name[0] : '?' }}</span>
             <span class="user-name" [title]="u.name">{{ u.name }}</span>
-          </div>
+          </a>
           <button type="button" class="tw-btn tw-btn--ghost tw-btn--ghost-danger" (click)="logout()">
             Cerrar sesión
           </button>

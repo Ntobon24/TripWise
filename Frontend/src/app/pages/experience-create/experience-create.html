@@ -1,0 +1,113 @@
+<div class="tw-container page exp-page">
+  <a routerLink="/planes/nuevo" class="back">← Volver al nuevo plan</a>
+
+  <h1 class="page-title">Crea tu experiencia</h1>
+  <p class="tw-muted exp-intro">
+    Indica tu presupuesto y lo que te gustaría; Nosotros eligiremos un destino de nuestra red de ciudades,
+    fechas y un título, y generaremos vuelo y actividades, todo por ti.
+  </p>
+
+  @if (err()) {
+    <p class="tw-error" role="alert">{{ err() }}</p>
+  }
+
+  <form class="tw-card exp-form" (ngSubmit)="submit(expForm)" #expForm="ngForm" novalidate>
+    <div class="tw-field">
+      <label for="exp-budget">Presupuesto total (USD) <span class="required-mark">*</span></label>
+      <input
+        id="exp-budget"
+        name="budget"
+        type="number"
+        [(ngModel)]="budgetAmount"
+        min="1"
+        max="10000000"
+        step="50"
+        required
+      />
+    </div>
+
+    <div class="city-block">
+      <p class="field-group-label">Origen</p>
+      <app-city-typeahead
+        label="Ciudad de origen"
+        placeholder="Busca tu ciudad de salida…"
+        [(cityName)]="originCityName"
+        [(cityCode)]="originCityCode"
+      />
+      <div class="tw-field">
+        <label for="exp-oc">Código (IATA / país) <span class="required-mark">*</span></label>
+        <input
+          id="exp-oc"
+          name="oc"
+          [(ngModel)]="originCityCode"
+          required
+          minlength="2"
+          maxlength="8"
+          pattern="[A-Za-z0-9]{2,8}"
+          class="code-input"
+          style="text-transform: uppercase"
+          placeholder="BOG"
+        />
+      </div>
+    </div>
+
+    <div class="tw-field">
+      <label for="exp-continent">Continente preferido</label>
+      <select id="exp-continent" name="continent" [(ngModel)]="continent">
+        @for (c of continents; track c.id) {
+          <option [value]="c.id">{{ c.label }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="tw-field">
+      <label for="exp-days">Duración aproximada (días)</label>
+      <input
+        id="exp-days"
+        name="tripDays"
+        type="number"
+        [(ngModel)]="tripDays"
+        min="3"
+        max="14"
+        placeholder="Opcional (Ej: 3–14) "
+      />
+    </div>
+
+    <div class="tw-field">
+      <label for="exp-interests">¿Qué te gustaría hacer o ver?</label>
+      <textarea
+        id="exp-interests"
+        name="interests"
+        [(ngModel)]="interests"
+        rows="3"
+        maxlength="500"
+        placeholder="Ej.: playa, museos, comida local…"
+      ></textarea>
+    </div>
+
+    <div class="tw-field">
+      <label for="exp-pace">Ritmo del viaje</label>
+      <select id="exp-pace" name="pace" [(ngModel)]="pace">
+        @for (o of paceOpts; track o.id) {
+          <option [value]="o.id">{{ o.label }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="tw-field">
+      <label for="exp-party">Con quién viajas</label>
+      <select id="exp-party" name="travelParty" [(ngModel)]="travelParty">
+        @for (o of partyOpts; track o.id) {
+          <option [value]="o.id">{{ o.label }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="exp-actions">
+      <button type="submit" class="tw-btn" [disabled]="busy()">
+        {{ busy() ? 'Generando plan…' : 'Generar mi experiencia' }}
+      </button>
+      <a routerLink="/planes" class="tw-btn tw-btn--ghost">Cancelar</a>
+    </div>
+  </form>
+</div>
