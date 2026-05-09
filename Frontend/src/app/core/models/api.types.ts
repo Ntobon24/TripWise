@@ -42,6 +42,7 @@ export type TravelIntegrationsStatus = {
   flightApi: { configured: boolean; hint: string | null };
   geodb: { configured: boolean; hint: string | null };
   openTripMap: { configured: boolean; hint: string | null };
+  googlePlaces: { configured: boolean; hint: string | null };
   tripadvisor: { configured: boolean; hint: string | null };
   viator: { configured: boolean; hint: string | null };
   groq: { configured: boolean; hint: string | null };
@@ -105,13 +106,17 @@ export type PlanPlaceReviewItem = {
   imageUrl: string | null;
   otmUrl: string | null;
   rate: number | null;
+  /** Escala de valoración (Google 5, OpenTripMap 7). */
+  ratingMax?: number | null;
+  userRatingCount?: number | null;
 };
 
 export type PlanReviewsResponse = {
   success: boolean;
   openTripMapConfigured: boolean;
-  /** Contenido basado en la ciudad de destino, no en actividades sueltas. */
-  reviewScope?: 'destination';
+  googlePlacesConfigured?: boolean;
+  /** Qué cubren las tarjetas de reseñas. */
+  reviewScope?: 'destination' | 'activities';
   destinationLabel?: string;
   hint?: string | null;
   places: PlanPlaceReviewItem[];

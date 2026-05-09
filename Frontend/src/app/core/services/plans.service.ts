@@ -41,7 +41,7 @@ export class PlansService {
     return this.http.get<TravelPlanSummary>(this.url(`/plans/${id}`));
   }
 
-  /** OpenTripMap: descripciones / valoraciones por actividad del plan. */
+  /** Reseñas del destino y actividades (Google Places si está configurado; si no, OpenTripMap para la ciudad). */
   getReviews(planId: string) {
     return this.http.get<PlanReviewsResponse>(this.url(`/plans/${planId}/reviews`));
   }

@@ -2,6 +2,7 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { GeoDbService } from './geodb.service';
 import { FlightApiService } from './flightapi.service';
 import { OpenTripMapService } from './opentripmap.service';
+import { GooglePlacesService } from './google-places.service';
 import { TripAdvisorService } from './tripadvisor.service';
 import { ViatorService } from './viator.service';
 import { RecommendationsService } from './recommendations.service';
@@ -18,6 +19,7 @@ export class TravelController {
     private readonly geodb: GeoDbService,
     private readonly flightApi: FlightApiService,
     private readonly otm: OpenTripMapService,
+    private readonly googlePlaces: GooglePlacesService,
     private readonly tripadvisor: TripAdvisorService,
     private readonly viator: ViatorService,
     private readonly recommendationsService: RecommendationsService,
@@ -44,6 +46,12 @@ export class TravelController {
         hint: this.otm.isConfigured()
           ? null
           : 'OPENTRIPMAP_API_KEY (opentripmap.io) para puntos de interés.',
+      },
+      googlePlaces: {
+        configured: this.googlePlaces.isConfigured(),
+        hint: this.googlePlaces.isConfigured()
+          ? null
+          : 'GOOGLE_PLACES_API_KEY para reseñas (Places API New en Google Cloud).',
       },
       tripadvisor: {
         configured: this.tripadvisor.isConfigured(),

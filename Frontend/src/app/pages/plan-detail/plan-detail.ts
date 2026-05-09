@@ -141,6 +141,7 @@ export class PlanDetail implements OnInit {
   protected readonly reviewsLoading = signal(false);
   protected readonly reviewsErr = signal('');
   protected readonly reviewsHint = signal<string | null>(null);
+  protected readonly reviewsScope = signal<'destination' | 'activities' | null>(null);
   private readonly reviewsFetched = signal(false);
 
   protected readonly estimacionLoading = signal(false);
@@ -249,6 +250,7 @@ export class PlanDetail implements OnInit {
         this.reviews.set([]);
         this.reviewsErr.set('');
         this.reviewsHint.set(null);
+        this.reviewsScope.set(null);
         this.estimacionFetched.set(false);
         this.estimacionErr.set('');
       },
@@ -333,6 +335,7 @@ export class PlanDetail implements OnInit {
         this.reviewsLoading.set(false);
         this.reviewsFetched.set(true);
         this.reviewsHint.set(r.hint ?? null);
+        this.reviewsScope.set(r.reviewScope ?? null);
         this.reviews.set(r.places ?? []);
       },
       error: (e) => {

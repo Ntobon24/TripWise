@@ -7,6 +7,7 @@ import { UpdateTravelPlanDto } from './dto/update-plan.dto';
 import { RecommendationsService } from '../travel/recommendations.service';
 import type { AiExperienceInput } from '../travel/recommendations.service';
 import { OpenTripMapService } from '../travel/opentripmap.service';
+import { GooglePlacesService } from '../travel/google-places.service';
 import { GeoDbService } from '../travel/geodb.service';
 import { GroqService } from '../groq/groq.service';
 import type { FlightOfferSummary } from '../travel/mappers/flight-offer.mapper';
@@ -23,6 +24,7 @@ export class PlansService {
     private readonly plans: Repository<TravelPlan>,
     private readonly recommendations: RecommendationsService,
     private readonly otm: OpenTripMapService,
+    private readonly googlePlaces: GooglePlacesService,
     private readonly geodb: GeoDbService,
     private readonly groq: GroqService,
   ) {}
@@ -77,29 +79,11 @@ export class PlansService {
     return this.mapPlan(plan);
   }
 
-  /** Reseñas / descripción OpenTripMap para la ciudad de destino del plan (no por actividad). */
+  /** Reseñas: Google Places API (New) si hay clave; si no, respaldo OpenTripMap (solo ciudad). */
   async getPlaceReviewsForPlan(userId: string, planId: string) {
     const plan = await this.plans.findOne({ where: { id: planId, userId } });
     if (!plan) {
       throw new NotFoundException('Plan no encontrado.');
-    }
-
-    if (!this.otm.isConfigured()) {
-      return {
-        success: true,
-        openTripMapConfigured: false,
-        reviewScope: 'destination' as const,
-        hint: 'Configura OPENTRIPMAP_API_KEY en el servidor para ver reseñas e información del destino.',
-        places: [] as Array<{
-          activityId: string;
-          activityName: string;
-          name: string | null;
-          descriptionText: string | null;
-          imageUrl: string | null;
-          otmUrl: string | null;
-          rate: number | null;
-        }>,
-      };
     }
 
     const displayName = (
@@ -108,9 +92,147 @@ export class PlansService {
       ''
     ).trim();
 
+    if (this.googlePlaces.isConfigured()) {
+      return this.reviewsFromGooglePlaces(plan, displayName);
+    }
+
+    return this.reviewsFromOpenTripMap(displayName);
+  }
+
+  private parseActivitiesFromPlan(plan: TravelPlan): Array<{ id: string; label: string }> {
+    const raw = plan.selectedActivitiesJson;
+    if (!Array.isArray(raw) || raw.length === 0) {
+      return [];
+    }
+    return raw.map((row, i) => {
+      const id = row['id'];
+      const name = row['name'];
+      return {
+        id: typeof id === 'string' ? id : String(id ?? `idx-${i}`),
+        label:
+          typeof name === 'string' && name.trim()
+            ? name.trim()
+            : `Actividad ${i + 1}`,
+      };
+    });
+  }
+
+  private async reviewsFromGooglePlaces(plan: TravelPlan, displayName: string) {
+    const acts = this.parseActivitiesFromPlan(plan);
+
+    type Row = {
+      activityId: string;
+      activityName: string;
+      name: string | null;
+      descriptionText: string | null;
+      imageUrl: string | null;
+      otmUrl: string | null;
+      rate: number | null;
+      ratingMax: number | null;
+      userRatingCount: number | null;
+    };
+
+    if (acts.length === 0) {
+      return {
+        success: true,
+        googlePlacesConfigured: true,
+        openTripMapConfigured: this.otm.isConfigured(),
+        reviewScope: 'activities' as const,
+        hint: 'Añade actividades al plan para ver reseñas de Google sobre cada lugar.',
+        places: [] as Row[],
+      };
+    }
+
+    let bias: { latitude: number; longitude: number } | undefined;
+    if (displayName && this.geodb.isConfigured()) {
+      const c = await this.geodb.getFirstCityCoords(displayName);
+      if (c) {
+        bias = { latitude: c.latitude, longitude: c.longitude };
+      }
+    }
+
+    const queries: Array<{ id: string; title: string; textQuery: string }> = [];
+    for (const a of acts) {
+      const suffix = displayName ? `, ${displayName}` : '';
+      queries.push({
+        id: `google:act:${a.id}`,
+        title: a.label,
+        textQuery: `${a.label}${suffix}`.trim(),
+      });
+    }
+
+    const reviewScope = 'activities' as const;
+
+    const seenResource = new Set<string>();
+    const placesOut: Row[] = [];
+
+    for (const q of queries) {
+      const payload = await this.googlePlaces.searchFirstPlaceWithReviews(q.textQuery, bias);
+      if (!payload || seenResource.has(payload.resourceName)) {
+        continue;
+      }
+      seenResource.add(payload.resourceName);
+      placesOut.push({
+        activityId: q.id,
+        activityName: q.title,
+        name: payload.displayTitle,
+        descriptionText: payload.descriptionText,
+        imageUrl: null,
+        otmUrl: payload.googleMapsUri,
+        rate: payload.rating,
+        ratingMax: 5,
+        userRatingCount: payload.userRatingCount,
+      });
+      if (placesOut.length >= 15) {
+        break;
+      }
+    }
+
+    let hint: string | null = null;
+    if (placesOut.length === 0) {
+      hint =
+        'No se encontraron lugares en Google para esta búsqueda. Prueba nombres más específicos (ciudad completa o lugar concreto).';
+    }
+
+    return {
+      success: true,
+      googlePlacesConfigured: true,
+      openTripMapConfigured: this.otm.isConfigured(),
+      reviewScope,
+      hint,
+      places: placesOut,
+    };
+  }
+
+  private async reviewsFromOpenTripMap(displayName: string) {
+    type Row = {
+      activityId: string;
+      activityName: string;
+      name: string | null;
+      descriptionText: string | null;
+      imageUrl: string | null;
+      otmUrl: string | null;
+      rate: number | null;
+      ratingMax: number | null;
+      userRatingCount: number | null;
+    };
+
+    if (!this.otm.isConfigured()) {
+      return {
+        success: true,
+        googlePlacesConfigured: false,
+        openTripMapConfigured: false,
+        reviewScope: 'destination' as const,
+        hint:
+          'Configura GOOGLE_PLACES_API_KEY (reseñas Google) u OPENTRIPMAP_API_KEY (información del destino).',
+        places: [] as Row[],
+      };
+    }
+
     if (!displayName) {
       return {
         success: true,
+        googlePlacesConfigured: false,
         openTripMapConfigured: true,
         reviewScope: 'destination' as const,
         hint: 'Añade la ciudad de destino al plan para ver la información del destino.',
@@ -137,6 +259,7 @@ export class PlansService {
     if (!details) {
       return {
         success: true,
+        googlePlacesConfigured: false,
         openTripMapConfigured: true,
         reviewScope: 'destination' as const,
         hint: `No se encontró información en OpenTripMap para «${displayName}». Comprueba el nombre de la ciudad.`,
@@ -148,9 +271,11 @@ export class PlansService {
 
     return {
       success: true,
+      googlePlacesConfigured: false,
       openTripMapConfigured: true,
       reviewScope: 'destination' as const,
       destinationLabel: displayName,
+      hint: null,
       places: [
         {
           activityId: details.xid,
@@ -160,6 +285,8 @@ export class PlansService {
           imageUrl: details.imageUrl,
           otmUrl: details.otmUrl,
           rate: details.rate,
+          ratingMax: 7,
+          userRatingCount: null,
         },
       ],
     };

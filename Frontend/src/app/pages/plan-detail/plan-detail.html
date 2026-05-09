@@ -375,7 +375,13 @@
         @if (detailTab() === 'reviews') {
         <div class="rec-tab-panel rec-tab-panel--reviews" role="tabpanel">
           <p class="tw-muted reviews-intro">
-            Información sobre la ciudad de destino de tu plan.
+            @if (reviewsScope() === 'destination') {
+              Información sobre la ciudad de destino (OpenTripMap).
+            } @else if (reviewsScope() === 'activities') {
+              Reseñas e información de Google sobre las actividades de tu plan.
+            } @else {
+              Reseñas e información de tu plan.
+            }
           </p>
 
           @if (reviewsLoading()) {
@@ -388,7 +394,16 @@
             }
 
             @if (reviews().length === 0 && !reviewsHint()) {
-              <p class="tw-muted">No hay información del destino. Comprueba que el plan tenga ciudad de destino.</p>
+              @switch (reviewsScope()) {
+                @case ('activities') {
+                  <p class="tw-muted">No se encontraron reseñas para las actividades seleccionadas.</p>
+                }
+                @default {
+                  <p class="tw-muted">
+                    No hay información del destino. Comprueba que el plan tenga ciudad de destino.
+                  </p>
+                }
+              }
             }
 
             @for (place of reviews(); track place.activityId) {
@@ -396,7 +411,13 @@
                 <div class="review-card-head">
                   <h3 class="review-title">{{ place.activityName }}</h3>
                   @if (place.rate != null) {
-                    <span class="tw-badge">Valoración {{ place.rate | number : '1.0-1' }} / 7</span>
+                    <span class="tw-badge">
+                      Valoración {{ place.rate | number : '1.0-1' }} /
+                      {{ place.ratingMax ?? 7 }}
+                      @if (place.userRatingCount != null && place.userRatingCount > 0) {
+                        ({{ place.userRatingCount }} opiniones)
+                      }
+                    </span>
                   }
                 </div>
                 @if (place.imageUrl) {
