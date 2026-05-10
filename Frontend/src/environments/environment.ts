@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'http://localhost:3000',
+  apiBaseUrl: 'https://tripwise-m03s.onrender.com',
 };

@@ -21,6 +21,7 @@ async function bootstrap() {
   const corsOrigins = process.env.CORS_ORIGINS?.split(',').map((o) => o.trim()) ?? [
     'http://localhost:4200',
   ];
+
   app.enableCors({
     origin: corsOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
@@ -28,9 +29,10 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT ?? 3000;
-  await app.listen(port);
   
-  console.log(`TripWise API: http://localhost:${port}`);
+  await app.listen(port, '0.0.0.0');
+  
+  console.log(`TripWise API is running on port: ${port}`);
 }
 
 bootstrap();
