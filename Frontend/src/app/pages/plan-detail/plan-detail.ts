@@ -143,6 +143,25 @@ export class PlanDetail implements OnInit {
   protected readonly reviewsHint = signal<string | null>(null);
   protected readonly reviewsScope = signal<'destination' | 'activities' | null>(null);
   private readonly reviewsFetched = signal(false);
+  protected reviewsPage = 0;
+  protected readonly reviewsPerPage = 3;
+
+  protected get pagedReviews(): PlanPlaceReviewItem[] {
+    const start = this.reviewsPage * this.reviewsPerPage;
+    return this.reviews().slice(start, start + this.reviewsPerPage);
+  }
+
+  protected get totalReviewPages(): number {
+    return Math.ceil(this.reviews().length / this.reviewsPerPage);
+  }
+
+  protected prevReviewPage(): void {
+    if (this.reviewsPage > 0) this.reviewsPage--;
+  }
+
+  protected nextReviewPage(): void {
+    if (this.reviewsPage < this.totalReviewPages - 1) this.reviewsPage++;
+  }
 
   protected readonly estimacionLoading = signal(false);
   protected readonly estimacionErr = signal('');
@@ -251,6 +270,7 @@ export class PlanDetail implements OnInit {
         this.reviewsErr.set('');
         this.reviewsHint.set(null);
         this.reviewsScope.set(null);
+        this.reviewsPage = 0;
         this.estimacionFetched.set(false);
         this.estimacionErr.set('');
       },
@@ -337,6 +357,7 @@ export class PlanDetail implements OnInit {
         this.reviewsHint.set(r.hint ?? null);
         this.reviewsScope.set(r.reviewScope ?? null);
         this.reviews.set(r.places ?? []);
+        this.reviewsPage = 0;
       },
       error: (e) => {
         this.reviewsLoading.set(false);

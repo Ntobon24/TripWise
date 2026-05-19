@@ -200,11 +200,16 @@
       </span>
     </label>
 
-    <p class="experience-cta tw-muted">
-      ¿Algo más personalizado?
-      <a routerLink="/planes/experiencia" class="experience-cta-link">Crea tu experiencia</a>
-      — Nosotros elegimos destino y fechas según tus respuestas para crear el splan ideal para ti.
-    </p>
+    <div class="experience-cta cta-card" role="region" aria-label="Crea tu experiencia">
+      <div class="cta-body">
+        <p class="cta-eyebrow">¿Buscas algo aún más personalizado?</p>
+        <p class="cta-title">Crea tu experiencia</p>
+        <p class="cta-desc">Contesta unas preguntas y nosotros elegimos destino y fechas para crear el plan ideal para ti.</p>
+      </div>
+      <div class="cta-actions">
+        <a routerLink="/planes/experiencia" class="experience-cta-link cta-btn" aria-label="Crear experiencia">Crear experiencia</a>
+      </div>
+    </div>
 
     <div class="dates-row">
       <div class="tw-field">

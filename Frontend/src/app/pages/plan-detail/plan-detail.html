@@ -406,36 +406,72 @@
               }
             }
 
-            @for (place of reviews(); track place.activityId) {
-              <article class="review-card">
-                <div class="review-card-head">
-                  <h3 class="review-title">{{ place.activityName }}</h3>
-                  @if (place.rate != null) {
-                    <span class="tw-badge">
-                      Valoración {{ place.rate | number : '1.0-1' }} /
-                      {{ place.ratingMax ?? 7 }}
-                      @if (place.userRatingCount != null && place.userRatingCount > 0) {
-                        ({{ place.userRatingCount }} opiniones)
-                      }
-                    </span>
-                  }
+            @if (reviews().length > 0) {
+              @if (totalReviewPages > 1) {
+                <div class="review-pagination review-pagination--top" aria-label="Paginación de reseñas">
+                  <button type="button" class="tw-btn tw-btn--ghost review-page-btn" (click)="prevReviewPage()" [disabled]="reviewsPage === 0">
+                    Anterior
+                  </button>
+                  <span class="review-page-count">Página {{ reviewsPage + 1 }} de {{ totalReviewPages }}</span>
+                  <button type="button" class="tw-btn tw-btn--ghost review-page-btn" (click)="nextReviewPage()" [disabled]="reviewsPage >= totalReviewPages - 1">
+                    Siguiente
+                  </button>
                 </div>
-                @if (place.imageUrl) {
-                  <div class="review-img-wrap">
-                    <img [src]="place.imageUrl" alt="" class="review-img" loading="lazy" />
-                  </div>
+              }
+
+              <div class="review-list">
+                @for (place of pagedReviews; track place.activityId) {
+                  <details class="review-card review-accordion">
+                    <summary class="review-summary">
+                      <div class="review-summary-main">
+                        <h3 class="review-title">{{ place.activityName }}</h3>
+                        <p class="review-summary-subtitle">
+                          {{ place.name || 'Lugar sin nombre' }}
+                        </p>
+                      </div>
+                      @if (place.rate != null) {
+                        <span class="tw-badge review-badge">
+                          Valoración {{ place.rate | number : '1.0-1' }} /
+                          {{ place.ratingMax ?? 7 }}
+                          @if (place.userRatingCount != null && place.userRatingCount > 0) {
+                            ({{ place.userRatingCount }} opiniones)
+                          }
+                        </span>
+                      }
+                    </summary>
+
+                    <div class="review-content">
+                      @if (place.imageUrl) {
+                        <div class="review-img-wrap">
+                          <img [src]="place.imageUrl" alt="" class="review-img" loading="lazy" />
+                        </div>
+                      }
+                      @if (place.descriptionText) {
+                        <p class="review-text">{{ place.descriptionText }}</p>
+                      } @else {
+                        <p class="tw-muted">No hay descripción disponible para este lugar.</p>
+                      }
+                      @if (place.otmUrl) {
+                        <p class="review-more">
+                          <a [href]="place.otmUrl" target="_blank" rel="noopener noreferrer">Ver más</a>
+                        </p>
+                      }
+                    </div>
+                  </details>
                 }
-                @if (place.descriptionText) {
-                  <p class="review-text">{{ place.descriptionText }}</p>
-                } @else {
-                  <p class="tw-muted">No hay descripción disponible para este lugar.</p>
-                }
-                @if (place.otmUrl) {
-                  <p class="review-more">
-                    <a [href]="place.otmUrl" target="_blank" rel="noopener noreferrer">Ver más</a>
-                  </p>
-                }
-              </article>
+              </div>
+
+              @if (totalReviewPages > 1) {
+                <div class="review-pagination review-pagination--bottom" aria-label="Paginación de reseñas">
+                  <button type="button" class="tw-btn tw-btn--ghost review-page-btn" (click)="prevReviewPage()" [disabled]="reviewsPage === 0">
+                    Anterior
+                  </button>
+                  <span class="review-page-count">{{ pagedReviews.length }} reseñas en esta página</span>
+                  <button type="button" class="tw-btn tw-btn--ghost review-page-btn" (click)="nextReviewPage()" [disabled]="reviewsPage >= totalReviewPages - 1">
+                    Siguiente
+                  </button>
+                </div>
+              }
             }
           }
         </div>

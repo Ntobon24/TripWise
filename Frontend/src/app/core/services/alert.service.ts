@@ -66,13 +66,47 @@ export class AlertService {
             : icon === 'info'
               ? 'tw-swal-toast-popup--info'
               : '';
+    const id = `tw-toast-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+
     void this.toastMixin.fire({
       icon,
       title,
+      didOpen: (toast) => {
+        try {
+          (toast as HTMLElement).dataset['twToastId'] = id;
+          toast.addEventListener('mouseenter', Swal.stopTimer);
+          toast.addEventListener('mouseleave', Swal.resumeTimer);
+        } catch (_) {
+          // ignore
+        }
+      },
       customClass: {
         popup: ['tw-swal-toast-popup', variant].filter(Boolean).join(' '),
       },
     });
+
+    // Targeted fallback: close only the toast with our id after timer+buffer
+    try {
+      const fallbackMs = 3800 + 700;
+      window.setTimeout(() => {
+        // Aggressive fallback: remove any remaining toast popups and containers.
+        try {
+          const popups = Array.from(document.querySelectorAll('.tw-swal-toast-popup')) as HTMLElement[];
+          for (const p of popups) {
+            try { p.remove(); } catch (_) { /* noop */ }
+          }
+          const containers = Array.from(document.querySelectorAll('.tw-swal-toast-container')) as HTMLElement[];
+          for (const c of containers) {
+            try { c.remove(); } catch (_) { /* noop */ }
+          }
+        } catch (_) {
+          /* noop */
+        }
+        try { Swal.close(); } catch (_) { /* noop */ }
+      }, fallbackMs);
+    } catch (e) {
+      // ignore in environments without window
+    }
   }
 
   /** Form / client-side validation (amber, icon warning) */

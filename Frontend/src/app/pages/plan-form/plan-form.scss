@@ -12,6 +12,7 @@
   margin-bottom: 0.85rem;
   font-size: 0.9rem;
   color: var(--tw-muted);
+  text-decoration: none;
 }
 
 .form-card {
@@ -240,8 +241,101 @@
   text-decoration: none;
 }
 
-.experience-cta-link:hover {
-  text-decoration: underline;
+/* no underline on hover for CTA links */
+.experience-cta-link:hover,
+.cta-btn:hover,
+.back:hover {
+  text-decoration: none;
+}
+
+/* Ensure no underline on focus/active/visited for CTA and back links */
+.experience-cta-link,
+.cta-btn,
+.back {
+  text-decoration: none;
+}
+
+.experience-cta-link:focus,
+.experience-cta-link:active,
+.experience-cta-link:visited,
+.cta-btn:focus,
+.cta-btn:active,
+.cta-btn:visited,
+.back:focus,
+.back:active,
+.back:visited {
+  text-decoration: none;
+  outline: none;
+}
+
+/* CTA card styles */
+.cta-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgba(59,130,246,0.06), rgba(99,102,241,0.04));
+  border: 1.5px solid rgba(59,130,246,0.14);
+  box-shadow: 0 6px 18px rgba(15,23,42,0.04);
+  margin: 0.85rem 0 1rem;
+}
+
+.cta-body {
+  min-width: 0;
+}
+
+.cta-eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--tw-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.cta-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--tw-text);
+}
+
+.cta-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--tw-muted);
+}
+
+.cta-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cta-btn {
+  display: inline-block;
+  background: var(--tw-primary);
+  color: white;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 6px 14px rgba(59,130,246,0.12);
+}
+
+.cta-btn:hover {
+  filter: brightness(0.98);
+}
+
+@media (max-width: 720px) {
+  .cta-card {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+  }
+  .cta-actions { justify-content: flex-start; }
 }
 
 .span-2 {

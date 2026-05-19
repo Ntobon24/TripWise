@@ -3,6 +3,18 @@
   max-width: 520px;
 }
 
+/* No underline for back link in experience create page */
+.back {
+  text-decoration: none;
+}
+
+.back:focus,
+.back:active,
+.back:visited {
+  text-decoration: none;
+  outline: none;
+}
+
 .exp-intro {
   margin-bottom: 1.25rem;
   font-size: 0.95rem;
